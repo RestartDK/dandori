@@ -10,7 +10,7 @@ const app = new Elysia()
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
-    }),
+    })
   )
   .all("/api/auth/*", async (context) => {
     const { request, status } = context;
