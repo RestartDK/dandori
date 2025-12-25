@@ -1,5 +1,7 @@
 # Todo List
 
+- [ ] First deploy to Dokploy both backend and frontend
+
 ## Calendar View
 
 - [ ] Sync with Google Calendar (read and write)
@@ -72,4 +74,3 @@
 - [ ] Floating action bar appears when pending changes exist
 - [ ] Calendar auto-scrolls to show affected time ranges
 - [ ] Shared pending state between chat and calendar components
-
