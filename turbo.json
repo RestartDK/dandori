@@ -24,8 +24,12 @@
       "persistent": true
     },
     "db:migrate": {
+      "cache": false
+    },
+    "server#build": {
+      "dependsOn": ["@dandori-ai/db#db:migrate", "^build"],
       "cache": false,
-      "persistent": true
+      "outputs": ["server"]
     },
     "db:generate": {
       "cache": false,
