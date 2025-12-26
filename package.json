@@ -17,6 +17,7 @@
   "type": "module",
   "scripts": {
     "check": "biome check --write .",
+    "lint": "ultracite check",
     "dev": "turbo dev",
     "build": "turbo build",
     "check-types": "turbo check-types",
