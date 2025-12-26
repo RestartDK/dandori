@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { auth } from "@dandori-ai/auth";
 import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";

@@ -28,7 +28,6 @@
     "tw-animate-css": "^1.2.5",
     "@tanstack/react-query": "^5.90.12",
     "better-auth": "catalog:",
-    "dotenv": "catalog:",
     "zod": "catalog:",
     "@dandori-ai/auth": "workspace:*"
   },
