@@ -1,6 +1,6 @@
 import { auth } from "@dandori-ai/auth";
 import { cors } from "@elysiajs/cors";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 
 const app = new Elysia()
   .use(
@@ -18,7 +18,14 @@ const app = new Elysia()
     }
     return status(405);
   })
-  .get("/", () => "OK")
+  .get("/", () => ({ status: "ok", timestamp: Date.now() }), {
+    response: t.Object({
+      status: t.String(),
+      timestamp: t.Number(),
+    }),
+  })
   .listen(process.env.PORT || 3000, () => {
     console.log("Server is running on http://localhost:3000");
   });
+
+export type App = typeof app;
