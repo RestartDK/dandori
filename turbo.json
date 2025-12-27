@@ -24,7 +24,8 @@
       "persistent": true
     },
     "db:migrate": {
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL"]
     },
     "start": {
       "cache": false,
@@ -33,7 +34,13 @@
     "server#start": {
       "dependsOn": ["@dandori-ai/db#db:migrate"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "CORS_ORIGIN"
+      ]
     },
     "db:generate": {
       "cache": false,
