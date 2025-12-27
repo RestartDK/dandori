@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "server"]
     },
     "//#lint": {},
     "check-types": {
@@ -26,10 +26,14 @@
     "db:migrate": {
       "cache": false
     },
-    "server#build": {
-      "dependsOn": ["@dandori-ai/db#db:migrate", "^build"],
+    "start": {
       "cache": false,
-      "outputs": ["server"]
+      "persistent": true
+    },
+    "server#start": {
+      "dependsOn": ["@dandori-ai/db#db:migrate"],
+      "cache": false,
+      "persistent": true
     },
     "db:generate": {
       "cache": false,
