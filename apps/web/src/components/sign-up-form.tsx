@@ -35,6 +35,12 @@ export default function SignUpForm({
   const navigate = useNavigate();
   const { isPending } = authClient.useSession();
 
+  const handleGoogleSignUp = async (): Promise<void> => {
+    await authClient.signIn.social({
+      provider: "google",
+    });
+  };
+
   const form = useForm({
     defaultValues: {
       name: "",
@@ -153,7 +159,11 @@ export default function SignUpForm({
                     </Button>
                   )}
                 </form.Subscribe>
-                <Button type="button" variant="outline">
+                <Button
+                  onClick={handleGoogleSignUp}
+                  type="button"
+                  variant="outline"
+                >
                   <Chrome />
                   Sign up with Google
                 </Button>

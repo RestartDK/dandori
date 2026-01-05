@@ -35,6 +35,12 @@ export default function SignInForm({
   const navigate = useNavigate();
   const { isPending } = authClient.useSession();
 
+  const handleGoogleSignIn = async (): Promise<void> => {
+    await authClient.signIn.social({
+      provider: "google",
+    });
+  };
+
   const form = useForm({
     defaultValues: {
       email: "",
@@ -141,7 +147,11 @@ export default function SignInForm({
                     </Button>
                   )}
                 </form.Subscribe>
-                <Button type="button" variant="outline">
+                <Button
+                  onClick={handleGoogleSignIn}
+                  type="button"
+                  variant="outline"
+                >
                   <Chrome />
                   Login with Google
                 </Button>

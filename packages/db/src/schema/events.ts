@@ -1,5 +1,12 @@
 import { relations } from "drizzle-orm";
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 
@@ -18,6 +25,8 @@ export const event = pgTable(
     endTime: timestamp("end_time").notNull(),
     isAllDay: boolean("is_all_day").default(false).notNull(),
     color: text("color").default("#3b82f6").notNull(),
+    googleEventId: text("google_event_id"),
+    googleCalendarId: text("google_calendar_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -27,6 +36,10 @@ export const event = pgTable(
   (table) => [
     index("event_userId_idx").on(table.userId),
     index("event_startTime_idx").on(table.startTime),
+    uniqueIndex("event_user_google_event_idx").on(
+      table.userId,
+      table.googleEventId
+    ),
   ]
 );
 

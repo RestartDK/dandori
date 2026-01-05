@@ -3,8 +3,14 @@ import { db } from "@dandori-ai/db";
 import { event } from "@dandori-ai/db/schema";
 import { cors } from "@elysiajs/cors";
 import { and, eq, gte, lte } from "drizzle-orm";
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-typebox";
+import {
+  createInsertSchema,
+  createSelectSchema,
+  createUpdateSchema,
+} from "drizzle-typebox";
 import { Elysia, t } from "elysia";
+
+import { syncGoogleCalendarEvents } from "./google-calendar";
 
 const EventSchema = createSelectSchema(event);
 const InsertEventSchema = createInsertSchema(event);
@@ -41,6 +47,13 @@ const app = new Elysia()
       if (!user) {
         set.status = 401;
         return { message: "Unauthorized" };
+      }
+
+      // Sync Google Calendar events before fetching local events
+      try {
+        await syncGoogleCalendarEvents(user.id, query.start, query.end);
+      } catch {
+        // Silently fail sync - user can still see local events
       }
 
       const events = await db
