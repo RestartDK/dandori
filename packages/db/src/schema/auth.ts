@@ -73,6 +73,7 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)]
 );
 
+// Note: userRelations is extended in events.ts to include events
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
