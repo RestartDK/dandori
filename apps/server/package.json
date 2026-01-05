@@ -12,6 +12,7 @@
     "elysia": "^1.3.21",
     "@elysiajs/cors": "^1.3.3",
     "better-auth": "catalog:",
+    "drizzle-orm": "^0.45.1",
     "zod": "catalog:",
     "@dandori-ai/auth": "workspace:*",
     "@dandori-ai/db": "workspace:*"
