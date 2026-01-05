@@ -2,36 +2,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
-export interface CalendarEvent {
-  id: string;
-  userId: string;
-  title: string;
-  description: string | null;
-  startTime: string;
-  endTime: string;
-  isAllDay: boolean;
-  color: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// Infer types from Eden Treaty (derived from server TypeBox schemas)
+type EventsResponse = Awaited<ReturnType<typeof api.api.events.get>>["data"];
+export type CalendarEvent = NonNullable<EventsResponse>[number];
 
-export interface CreateEventInput {
-  title: string;
-  description?: string | null;
-  startTime: string;
-  endTime: string;
-  isAllDay?: boolean;
-  color?: string;
-}
+type CreateEventBody = Parameters<typeof api.api.events.post>[0];
+export type CreateEventInput = CreateEventBody;
 
-export interface UpdateEventInput {
-  title?: string;
-  description?: string | null;
-  startTime?: string;
-  endTime?: string;
-  isAllDay?: boolean;
-  color?: string;
-}
+type UpdateEventBody = Parameters<
+  ReturnType<typeof api.api.events>["patch"]
+>[0];
+export type UpdateEventInput = UpdateEventBody;
 
 export function useEvents(start: Date, end: Date) {
   const queryClient = useQueryClient();
@@ -48,7 +29,7 @@ export function useEvents(start: Date, end: Date) {
       if (error) {
         throw error;
       }
-      return data as CalendarEvent[];
+      return data;
     },
   });
 
@@ -58,7 +39,7 @@ export function useEvents(start: Date, end: Date) {
       if (error) {
         throw error;
       }
-      return data as CalendarEvent;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -74,7 +55,7 @@ export function useEvents(start: Date, end: Date) {
       if (error) {
         throw error;
       }
-      return data as CalendarEvent;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
