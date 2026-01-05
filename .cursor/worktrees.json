@@ -1,9 +1,8 @@
 {
   "setup-worktree": [
     "bun install",
-    "cp $ROOT_WORKTREE_PATH/.env .env",
-    "cp $ROOT_WORKTREE_PATH/.env apps/server/.env",
-    "cp $ROOT_WORKTREE_PATH/.env apps/web/.env",
-    "cp $ROOT_WORKTREE_PATH/.env packages/db/.env"
+    "cp $ROOT_WORKTREE_PATH/apps/server/.env apps/server/.env || true",
+    "cp $ROOT_WORKTREE_PATH/apps/web/.env apps/web/.env || true",
+    "cp $ROOT_WORKTREE_PATH/packages/db/.env packages/db/.env || true"
   ]
 }
