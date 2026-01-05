@@ -201,8 +201,8 @@ export function TimeGrid({
         </div>
       )}
 
-      <ScrollArea className="flex-1">
-        <div className="flex" style={{ height: totalHeight }}>
+      <ScrollArea className="h-full flex-1 overflow-hidden">
+        <div className="flex" style={{ minHeight: totalHeight }}>
           <div className="w-16 shrink-0">
             {displayHours.map((hour) => (
               <div
@@ -238,9 +238,9 @@ export function TimeGrid({
               >
                 {displayHours.map((hour) => (
                   <button
-                    className="block w-full cursor-pointer border-b transition-colors hover:bg-accent/50"
+                    className="block w-full border-b"
                     key={hour}
-                    onClick={() => handleSlotClick(date, hour)}
+                    onDoubleClick={() => handleSlotClick(date, hour)}
                     style={{ height: slotHeight }}
                     type="button"
                   />

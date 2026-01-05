@@ -107,8 +107,8 @@ export function EventDialog({
     await onSave({
       title,
       description: description || null,
-      startTime: startDate.toISOString(),
-      endTime: endDate.toISOString(),
+      startTime: startDate,
+      endTime: endDate,
       isAllDay,
       color,
     });

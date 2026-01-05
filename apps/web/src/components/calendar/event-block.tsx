@@ -28,6 +28,8 @@ export function EventBlock({
   const blockRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const wasDragging = useRef(false);
+  const wasResizing = useRef(false);
   const dragStartY = useRef(0);
   const originalTop = useRef(0);
   const originalHeight = useRef(0);
@@ -58,6 +60,10 @@ export function EventBlock({
   const handleDragEnd = useCallback(
     (e: React.DragEvent) => {
       setIsDragging(false);
+      wasDragging.current = true;
+      setTimeout(() => {
+        wasDragging.current = false;
+      }, 0);
 
       if (!(onDragEnd && blockRef.current)) {
         return;
@@ -123,6 +129,10 @@ export function EventBlock({
 
       const handlePointerUp = (upEvent: PointerEvent) => {
         setIsResizing(false);
+        wasResizing.current = true;
+        setTimeout(() => {
+          wasResizing.current = false;
+        }, 0);
         target.releasePointerCapture(upEvent.pointerId);
         target.removeEventListener("pointermove", handlePointerMove);
         target.removeEventListener("pointerup", handlePointerUp);
@@ -170,13 +180,16 @@ export function EventBlock({
   return (
     <button
       className={cn(
-        "absolute right-1 left-1 cursor-pointer overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-shadow hover:shadow-md",
+        "absolute right-1 left-1 flex cursor-pointer flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-shadow hover:shadow-md",
         isDragging && "opacity-50",
         className
       )}
       draggable={!isResizing}
       onClick={(e) => {
         e.stopPropagation();
+        if (wasDragging.current || wasResizing.current) {
+          return;
+        }
         onClick?.(event);
       }}
       onDragEnd={handleDragEnd}

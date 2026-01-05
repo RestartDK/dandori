@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { CalendarEvent, CreateEventInput } from "@/hooks/use-events";
 import { useEvents } from "@/hooks/use-events";
@@ -53,9 +53,26 @@ function getViewRange(
   return { start, end };
 }
 
+const CALENDAR_VIEW_KEY = "calendar-view";
+
 export function Calendar() {
-  const [currentView, setCurrentView] = useState<CalendarView>("week");
+  const [currentView, setCurrentView] = useState<CalendarView>(() => {
+    const saved = localStorage.getItem(CALENDAR_VIEW_KEY);
+    if (
+      saved === "day" ||
+      saved === "week" ||
+      saved === "month" ||
+      saved === "year"
+    ) {
+      return saved;
+    }
+    return "week";
+  });
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => {
+    localStorage.setItem(CALENDAR_VIEW_KEY, currentView);
+  }, [currentView]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
@@ -132,8 +149,8 @@ export function Calendar() {
     async (eventId: string, newStart: Date, newEnd: Date) => {
       await updateEvent({
         id: eventId,
-        startTime: newStart.toISOString(),
-        endTime: newEnd.toISOString(),
+        startTime: newStart,
+        endTime: newEnd,
       });
     },
     [updateEvent]
@@ -143,8 +160,8 @@ export function Calendar() {
     async (eventId: string, newStart: Date, newEnd: Date) => {
       await updateEvent({
         id: eventId,
-        startTime: newStart.toISOString(),
-        endTime: newEnd.toISOString(),
+        startTime: newStart,
+        endTime: newEnd,
       });
     },
     [updateEvent]

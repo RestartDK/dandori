@@ -128,25 +128,15 @@ export function MonthView({
           const isToday = isSameDay(day, today);
 
           return (
-            // biome-ignore lint/a11y/noStaticElementInteractions: Calendar day cell with custom click/keyboard handling
-            // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Calendar day cell interaction pattern
-            // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-label provides context for screen readers
-            // biome-ignore lint/a11y/noNoninteractiveTabindex: Day cell needs focus for keyboard navigation
+            // biome-ignore lint/a11y/noStaticElementInteractions: Calendar cell is a container for clickable elements
+            // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Double-click adds event
             <div
-              aria-label={`${day.toLocaleDateString()}, ${dayEvents.length} events`}
               className={cn(
-                "min-h-[100px] cursor-pointer border-r border-b p-1 transition-colors hover:bg-accent/50",
+                "min-h-[100px] border-r border-b p-1",
                 !isCurrentMonth && "bg-muted/30"
               )}
               key={day.toISOString()}
-              onClick={() => handleDayClick(day)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleDayClick(day);
-                }
-              }}
-              tabIndex={0}
+              onDoubleClick={() => handleDayClick(day)}
             >
               <button
                 className={cn(
