@@ -417,13 +417,7 @@ sequenceDiagram
 
 ### Prerequisites
 
-> **Important**: This testing harness uses the **dev database** that is already running. You do **NOT** need to:
-
-> - Run `bun db:start` - the database container is already running
-
-> - Run `bun db:generate` - schema generation is not required for dev testing
-
-> - Run `bun db:migrate` - migrations will be applied as needed, but not required for initial testing
+> **Important**: This testing harness uses the **dev database** that is already running. You do **NOT** need to:> - Run `bun db:start` - the database container is already running> - Run `bun db:generate` - schema generation is not required for dev testing> - Run `bun db:migrate` - migrations will be applied as needed, but not required for initial testing
 
 ### Step 1: Start the Dev Server
 
@@ -607,19 +601,7 @@ Check these in the browser developer console:
 
 ### Troubleshooting
 
-| Issue | Check |
-
-|-------|-------|
-
-| Events not loading | Server console for DB connection errors |
-
-| 401 Unauthorized | Ensure you're logged in, check session cookie |
-
-| Events not rendering | Browser console for React errors |
-
-| Drag/drop not working | Console logs in EventBlock component |
-
-| API errors | Network tab for response body details |
+| Issue | Check ||-------|-------|| Events not loading | Server console for DB connection errors || 401 Unauthorized | Ensure you're logged in, check session cookie || Events not rendering | Browser console for React errors || Drag/drop not working | Console logs in EventBlock component || API errors | Network tab for response body details |
 
 ### Remove Logging for Production
 
@@ -630,5 +612,6 @@ Before merging, remove or gate all console.log statements:
 // Option 2: Use a debug flag
 const DEBUG = import.meta.env.DEV;
 if (DEBUG) console.log("[Events API]", ...);
+
 
 ```
