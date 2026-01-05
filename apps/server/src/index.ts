@@ -13,8 +13,42 @@ import { Elysia, t } from "elysia";
 import { syncGoogleCalendarEvents } from "./google-calendar";
 
 const EventSchema = createSelectSchema(event);
-const InsertEventSchema = createInsertSchema(event);
-const UpdateEventSchema = createUpdateSchema(event);
+
+// Transform ISO date strings from JSON to Date objects
+const DateFromString = t
+  .Transform(t.String({ format: "date-time" }))
+  .Decode((value) => new Date(value))
+  .Encode((value) => value.toISOString());
+
+// Create schemas with date field overrides (to handle JSON string → Date conversion)
+const _InsertEventSchema = createInsertSchema(event, {
+  startTime: DateFromString,
+  endTime: DateFromString,
+});
+
+const _UpdateEventSchema = createUpdateSchema(event, {
+  startTime: DateFromString,
+  endTime: DateFromString,
+});
+
+// Omit server-managed fields from body schemas
+const CreateEventBody = t.Omit(_InsertEventSchema, [
+  "id",
+  "userId",
+  "googleEventId",
+  "googleCalendarId",
+  "createdAt",
+  "updatedAt",
+]);
+
+const UpdateEventBody = t.Omit(_UpdateEventSchema, [
+  "id",
+  "userId",
+  "googleEventId",
+  "googleCalendarId",
+  "createdAt",
+  "updatedAt",
+]);
 
 async function getSessionUser(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -110,7 +144,7 @@ const app = new Elysia()
       return newEvent;
     },
     {
-      body: InsertEventSchema,
+      body: CreateEventBody,
       response: {
         200: EventSchema,
         401: t.Object({ message: t.String() }),
@@ -152,7 +186,7 @@ const app = new Elysia()
     },
     {
       params: t.Object({ id: t.String() }),
-      body: UpdateEventSchema,
+      body: UpdateEventBody,
       response: {
         200: EventSchema,
         401: t.Object({ message: t.String() }),
