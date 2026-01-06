@@ -15,6 +15,7 @@ interface EventBlockProps {
   columnDate?: Date;
   columnWidth?: number;
   className?: string;
+  isContinuation?: boolean;
 }
 
 export function EventBlock({
@@ -28,6 +29,7 @@ export function EventBlock({
   columnDate,
   columnWidth = 0,
   className,
+  isContinuation = false,
 }: EventBlockProps) {
   const blockRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -178,7 +180,7 @@ export function EventBlock({
 
       <div className="pointer-events-none">
         <div className="truncate font-medium">{event.title}</div>
-        {!event.isAllDay && (
+        {!(event.isAllDay || isContinuation) && (
           <div className="opacity-80">
             {new Date(event.startTime).toLocaleTimeString("en-US", {
               hour: "numeric",
@@ -212,7 +214,7 @@ export function EventBlock({
         >
           <div className="pointer-events-none">
             <div className="truncate font-medium">{event.title}</div>
-            {!event.isAllDay && (
+            {!(event.isAllDay || isContinuation) && (
               <div className="opacity-80">
                 {new Date(event.startTime).toLocaleTimeString("en-US", {
                   hour: "numeric",
