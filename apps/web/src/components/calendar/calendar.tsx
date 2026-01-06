@@ -57,7 +57,12 @@ function getViewRange(
 
 const CALENDAR_VIEW_KEY = "calendar-view";
 
-export function Calendar() {
+interface CalendarProps {
+  isChatOpen: boolean;
+  onToggleChat: () => void;
+}
+
+export function Calendar({ isChatOpen, onToggleChat }: CalendarProps) {
   const [currentView, setCurrentView] = useState<CalendarView>(() => {
     const saved = localStorage.getItem(CALENDAR_VIEW_KEY);
     if (
@@ -217,8 +222,10 @@ export function Calendar() {
       <CalendarHeader
         currentDate={currentDate}
         currentView={currentView}
+        isChatOpen={isChatOpen}
         onAddEvent={() => handleAddEvent()}
         onNavigate={handleNavigate}
+        onToggleChat={onToggleChat}
         onViewChange={setCurrentView}
       />
 

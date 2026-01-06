@@ -23,6 +23,9 @@ export const env = {
   GOOGLE_CLIENT_ID: required("GOOGLE_CLIENT_ID"),
   GOOGLE_CLIENT_SECRET: required("GOOGLE_CLIENT_SECRET"),
 
+  // Google AI (Gemini)
+  GOOGLE_GENERATIVE_AI_API_KEY: required("GOOGLE_GENERATIVE_AI_API_KEY"),
+
   // Server
   PORT: optional("PORT", "3000"),
   CORS_ORIGIN: optional("CORS_ORIGIN", ""),
