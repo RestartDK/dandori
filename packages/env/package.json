@@ -1,0 +1,16 @@
+{
+  "name": "@dandori-ai/env",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./client": {
+      "default": "./src/client.ts"
+    }
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "@dandori-ai/config": "workspace:*"
+  }
+}

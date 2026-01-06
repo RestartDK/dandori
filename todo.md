@@ -1,16 +1,39 @@
 # Todo List
 
-- [ ] First deploy to Dokploy both backend and frontend
+- [x] First deploy to Dokploy both backend and frontend
+
+## To keep in mind for next plans
+
+- Make the plans always include harness where it will run db:push to test the schema changes (make sure plan defines exactly the same schema to avoid conflicts with parallel agents)
+- Include the fact that drizzle is source of truth, don't make new types throughout, using typebox with elysia and a plugin to convert drizzle to typebox
 
 ## Calendar View
 
-- [ ] Sync with Google Calendar (read and write)
-- [ ] Support recurring events
-- [ ] CRUD events on the calendar
-- [ ] Drag events to reschedule
-- [ ] Expand/shrink events by dragging edges
-- [ ] Click event to edit via popup
-- [ ] Add event button with popup
+- [x] Sync with Google Calendar (read and write)
+- [x] Support recurring events
+- [x] CRUD events on the calendar
+- [x] Drag events to reschedule
+- [x] Expand/shrink events by dragging edges
+- [x] Click event to edit via popup
+- [x] Add event button with popup
+
+Problems:
+
+- [x] Remove the bar on top of the page with old better auth ui elements
+- [x] There is no login page, need to use the one from shadcn as a default one
+- [x] There should be a header, but there should just be the profile picture with a dropdown with settings and log out
+- [x] fix the ui to use the shadcn defaults for consistent styling
+
+- [x] When dragging every event it will have the popup menu come up when you finish dragging, should not have a popup
+- [x] Need to add localstorage settings for setting the specific view you have like month or week so it persists on reload
+- [x] The text on the calendar should not be centered but be aligned at the top
+- [x] The calendar grid is not scrollable at the moment, must be scrollable
+- [x] Don't allow for a hover over every event to change colour on calendar grid, users should double tap to add a new event
+- [x] Fix dragging to be better visually
+- [x] Make sure to show ui of calendar grid first, then load events don't block ui
+
+- [x] fix ui of dropdown menu with spacing of elements, maybe need to check agin dropdown menu defaults
+- [x] add `env.ts` to make sure env variables are handled properly
 
 ## Chat Interface
 
@@ -55,6 +78,10 @@
 - [ ] No native mobile app
 
 ## Calendar Change Preview
+
+### Two way sync
+
+- [ ] This allows the users events to also sync with their google calendar as well
 
 ### MVP: Inline diff in chat
 

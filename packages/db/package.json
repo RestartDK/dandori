@@ -5,6 +5,12 @@
     ".": {
       "default": "./src/index.ts"
     },
+    "./schema": {
+      "default": "./src/schema/index.ts"
+    },
+    "./schema/*": {
+      "default": "./src/schema/*.ts"
+    },
     "./*": {
       "default": "./src/*.ts"
     }
@@ -28,6 +34,7 @@
   "dependencies": {
     "drizzle-orm": "^0.45.1",
     "pg": "^8.16.3",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@dandori-ai/env": "workspace:*"
   }
 }
