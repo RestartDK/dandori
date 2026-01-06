@@ -50,7 +50,7 @@ export default function UserMenu() {
       <DropdownMenuContent align="end" className="min-w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+            <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
               <Avatar>
                 <AvatarImage alt={user.name} src={user.image ?? undefined} />
                 <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
@@ -64,14 +64,14 @@ export default function UserMenu() {
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="my-1" />
         <DropdownMenuGroup>
           <DropdownMenuItem render={<Link to="/settings" />}>
             <Settings />
             Settings
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="my-1" />
         <DropdownMenuItem
           onClick={() => {
             authClient.signOut({
