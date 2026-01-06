@@ -39,13 +39,15 @@ Implement a chat-based AI calendar assistant using **Vercel AI SDK** with **Goog
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
+
 ## UI Component Diagrams
 
 ### Dashboard Layout (Calendar + Chat Panel)
 
 **Expanded Chat Panel:**
 
-```
+```javascript
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │  Header                                                                    [User Menu]   │
 ├────────────────────────────────────────────────────────────────────┬─────────────────────┤
@@ -74,7 +76,7 @@ Implement a chat-based AI calendar assistant using **Vercel AI SDK** with **Goog
 
 **Collapsed Chat Panel:**
 
-```
+```javascript
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │  Header                                                                    [User Menu]   │
 ├──────────────────────────────────────────────────────────────────────────────────────┬───┤
@@ -103,7 +105,7 @@ Implement a chat-based AI calendar assistant using **Vercel AI SDK** with **Goog
 
 **Chat Panel with Active Conversation:**
 
-```
+```javascript
 ┌────────────────────────────────────────────────────────────────────┬─────────────────────┐
 │                                                                    │  💬 AI Assistant  ◀ │
 │                         CALENDAR                                   ├─────────────────────┤
@@ -128,6 +130,8 @@ Implement a chat-based AI calendar assistant using **Vercel AI SDK** with **Goog
 │                                                                    │  └─────────────────┘│
 └────────────────────────────────────────────────────────────────────┴─────────────────────┘
 ```
+
+
 
 ### Proposal Cards (Approval Required)
 
@@ -214,6 +218,8 @@ Implement a chat-based AI calendar assistant using **Vercel AI SDK** with **Goog
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
+
+
 
 ### Tool Call Cards (Multi-Step Execution UI)
 
@@ -302,6 +308,8 @@ Implement a chat-based AI calendar assistant using **Vercel AI SDK** with **Goog
 └─────────────────────────────────────────────────────────┘
 ```
 
+
+
 ## Requirements Checklist
 
 - [ ] Collapsible panel
@@ -332,6 +340,8 @@ export const env = {
   GOOGLE_GENERATIVE_AI_API_KEY: required("GOOGLE_GENERATIVE_AI_API_KEY"),
 } as const;
 ```
+
+
 
 #### 1.2 Create calendar tools
 
@@ -611,9 +621,7 @@ If any database schema changes were made (e.g., new columns, tables):
 bun db:push
 ```
 
-This will push schema changes to the database. **Note:** Only run this if schema modifications were made to `packages/db/src/schema/`.
-
-For this implementation, schema changes are **not expected** since we're using existing event tables.
+This will push schema changes to the database. **Note:** Only run this if schema modifications were made to `packages/db/src/schema/`.For this implementation, schema changes are **not expected** since we're using existing event tables.
 
 ## File Structure
 
@@ -643,6 +651,8 @@ apps/web/src/
 packages/env/src/
 └── index.ts                 # Add GOOGLE_GENERATIVE_AI_API_KEY
 ```
+
+
 
 ## Key Design Decisions
 
@@ -683,5 +693,3 @@ packages/env/src/
 ## References
 
 - AI SDK Docs: https://ai-sdk.dev/docs
-- Google Gemini Provider: https://ai-sdk.dev/providers/ai-sdk-providers/google-generative-ai
-- Multi-Step Tool Calls: https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling#multi-step-calls
