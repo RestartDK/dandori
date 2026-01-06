@@ -144,9 +144,26 @@ function parseGoogleEvent(
 
   if (isAllDay) {
     // All-day events use date strings (YYYY-MM-DD)
-    startTime = new Date(gEvent.start?.date ?? "");
-    endTime = new Date(gEvent.end?.date ?? "");
-    // Google's end date is exclusive for all-day events, so subtract 1 day
+    // Parse as local dates to avoid UTC/local timezone mismatch
+    // (new Date("YYYY-MM-DD") parses as UTC midnight, causing wrong day in non-UTC timezones)
+    const startDateStr = gEvent.start?.date ?? "";
+    const endDateStr = gEvent.end?.date ?? "";
+
+    const startParts = startDateStr.split("-").map(Number);
+    const endParts = endDateStr.split("-").map(Number);
+
+    const startYear = startParts[0] ?? 0;
+    const startMonth = startParts[1] ?? 1;
+    const startDay = startParts[2] ?? 1;
+    const endYear = endParts[0] ?? 0;
+    const endMonth = endParts[1] ?? 1;
+    const endDay = endParts[2] ?? 1;
+
+    // Create start time as local midnight
+    startTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+
+    // Create end time in local time, then subtract 1 day (Google's end date is exclusive)
+    endTime = new Date(endYear, endMonth - 1, endDay, 0, 0, 0, 0);
     endTime.setDate(endTime.getDate() - 1);
     // Set to end of day
     endTime.setHours(23, 59, 59, 999);
