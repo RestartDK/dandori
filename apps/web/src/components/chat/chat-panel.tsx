@@ -1,13 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { env } from "@dandori-ai/env/client";
 import { DefaultChatTransport } from "ai";
-import {
-  ChevronLeft,
-  ChevronRight,
-  MessageSquare,
-  Send,
-  Sparkles,
-} from "lucide-react";
+import { Send, Sparkles } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -25,7 +19,6 @@ const SUGGESTIONS = [
 ];
 
 export function ChatPanel() {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -78,42 +71,12 @@ export function ChatPanel() {
 
   const isLoading = status === "streaming" || status === "submitted";
 
-  // Collapsed state - just show toggle button
-  if (!isExpanded) {
-    return (
-      <div className="relative flex h-full w-12 flex-col border-l bg-card">
-        <Button
-          aria-label="Expand chat panel"
-          className="absolute top-4 -left-3 z-10 size-6 rounded-full border bg-card shadow-sm"
-          onClick={() => setIsExpanded(true)}
-          size="icon"
-          variant="ghost"
-        >
-          <ChevronLeft className="size-3" />
-        </Button>
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
-          <MessageSquare className="size-5" />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative flex h-full w-96 flex-col border-l bg-card">
+    <div className="flex h-full w-96 flex-col border-l bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="size-4 text-primary" />
-          <h2 className="font-medium text-sm">AI Assistant</h2>
-        </div>
-        <Button
-          aria-label="Collapse chat panel"
-          onClick={() => setIsExpanded(false)}
-          size="icon-xs"
-          variant="ghost"
-        >
-          <ChevronRight className="size-4" />
-        </Button>
+      <div className="flex items-center gap-2 border-b px-4 py-3">
+        <Sparkles className="size-4 text-primary" />
+        <h2 className="font-medium text-sm">AI Assistant</h2>
       </div>
 
       {/* Messages */}

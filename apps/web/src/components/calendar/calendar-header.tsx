@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, PanelLeft, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,9 +14,11 @@ import type { CalendarView } from "./calendar";
 interface CalendarHeaderProps {
   currentView: CalendarView;
   currentDate: Date;
+  isChatOpen: boolean;
   onViewChange: (view: CalendarView) => void;
   onNavigate: (direction: "prev" | "next" | "today") => void;
   onAddEvent: () => void;
+  onToggleChat: () => void;
 }
 
 function formatDateRange(view: CalendarView, date: Date): string {
@@ -60,9 +62,11 @@ function formatDateRange(view: CalendarView, date: Date): string {
 export function CalendarHeader({
   currentView,
   currentDate,
+  isChatOpen,
   onViewChange,
   onNavigate,
   onAddEvent,
+  onToggleChat,
 }: CalendarHeaderProps) {
   return (
     <div className="flex items-center justify-between border-b px-4 py-3">
@@ -114,6 +118,15 @@ export function CalendarHeader({
         <Button onClick={onAddEvent} size="sm">
           <Plus className="mr-1 size-4" />
           Add Event
+        </Button>
+
+        <Button
+          aria-label={isChatOpen ? "Close chat panel" : "Open chat panel"}
+          onClick={onToggleChat}
+          size="icon"
+          variant="ghost"
+        >
+          <PanelLeft className={isChatOpen ? "-scale-x-100" : ""} />
         </Button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { Calendar } from "@/components/calendar/calendar";
 import { ChatPanel } from "@/components/chat/chat-panel";
@@ -16,13 +17,18 @@ export const Route = createFileRoute("/")({
 });
 
 function DashboardComponent() {
+  const [isChatOpen, setIsChatOpen] = useState(true);
+
   return (
     <PendingChangesProvider>
       <div className="flex h-[calc(100vh-49px)]">
         <div className="flex-1 overflow-hidden">
-          <Calendar />
+          <Calendar
+            isChatOpen={isChatOpen}
+            onToggleChat={() => setIsChatOpen((prev) => !prev)}
+          />
         </div>
-        <ChatPanel />
+        {isChatOpen && <ChatPanel />}
       </div>
     </PendingChangesProvider>
   );
