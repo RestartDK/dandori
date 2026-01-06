@@ -27,6 +27,10 @@
 Monorepo with Turborepo: `apps/` (web, server) and `packages/` (auth, db, config).
 TypeScript strict mode with `noUncheckedIndexedAccess`, `noUnusedLocals/Parameters`.
 
+## UI Components
+
+**NEVER** edit files in `apps/web/src/components/ui/` unless specifically requested. These are atomic shadcn components and should remain untouched. Apply styling overrides via `className` props when using these components.
+
 ## Type Management
 
 Types flow from **Drizzle schema → TypeBox → Elysia → Treaty**. This ensures a single source of truth.
@@ -47,6 +51,26 @@ Use `drizzle-typebox` to generate TypeBox schemas directly from Drizzle table de
 - **NEVER** create separate TypeScript interfaces/types for API requests or responses
 - Frontend types are automatically inferred from the Elysia route definitions
 - If you need a type on the frontend, extract it from the Treaty client
+
+## Environment Variables
+
+Type-safe env is handled by `@dandori-ai/env` with two exports:
+
+- **`@dandori-ai/env`** → Server-side (uses `process.env`)
+- **`@dandori-ai/env/client`** → Client-side for Vite (uses `import.meta.env`)
+
+```typescript
+// Server (packages/auth, packages/db, apps/server)
+import { env } from "@dandori-ai/env";
+env.DATABASE_URL  // required - throws if missing
+env.PORT          // optional - defaults to "3000"
+
+// Client (apps/web)
+import { env } from "@dandori-ai/env/client";
+env.VITE_SERVER_URL  // required - throws if missing
+```
+
+**Never** use raw `process.env` or `import.meta.env` directly. Always use the typed `env` object.
 
 ## Deployment
 
