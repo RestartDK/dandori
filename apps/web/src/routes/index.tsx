@@ -1,6 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { Calendar } from "@/components/calendar/calendar";
+import { ChatPanel } from "@/components/chat/chat-panel";
+import { PendingChangesProvider } from "@/context/pending-changes-context";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/")({
@@ -15,8 +17,13 @@ export const Route = createFileRoute("/")({
 
 function DashboardComponent() {
   return (
-    <div className="h-[calc(100vh-49px)]">
-      <Calendar />
-    </div>
+    <PendingChangesProvider>
+      <div className="flex h-[calc(100vh-49px)]">
+        <div className="flex-1 overflow-hidden">
+          <Calendar />
+        </div>
+        <ChatPanel />
+      </div>
+    </PendingChangesProvider>
   );
 }
