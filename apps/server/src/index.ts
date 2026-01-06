@@ -3,7 +3,7 @@ import { db } from "@dandori-ai/db";
 import { event } from "@dandori-ai/db/schema";
 import { env } from "@dandori-ai/env";
 import { cors } from "@elysiajs/cors";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gt, lt } from "drizzle-orm";
 import {
   createInsertSchema,
   createSelectSchema,
@@ -97,8 +97,8 @@ const app = new Elysia()
         .where(
           and(
             eq(event.userId, user.id),
-            gte(event.startTime, query.start),
-            lte(event.endTime, query.end)
+            lt(event.startTime, query.end),
+            gt(event.endTime, query.start)
           )
         );
 
