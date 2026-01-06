@@ -144,6 +144,7 @@ export function EventDialog({
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
+              className="field-sizing-fixed max-h-32 overflow-y-auto break-all"
               id="description"
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Event description (optional)"
