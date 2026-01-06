@@ -41,7 +41,8 @@
         "BETTER_AUTH_URL",
         "CORS_ORIGIN",
         "GOOGLE_CLIENT_ID",
-        "GOOGLE_CLIENT_SECRET"
+        "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_GENERATIVE_AI_API_KEY"
       ]
     },
     "db:generate": {
