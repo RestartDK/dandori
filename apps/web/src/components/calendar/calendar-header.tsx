@@ -99,7 +99,9 @@ export function CalendarHeader({
           value={currentView}
         >
           <SelectTrigger className="w-28">
-            <SelectValue />
+            <SelectValue>
+              {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="day">Day</SelectItem>

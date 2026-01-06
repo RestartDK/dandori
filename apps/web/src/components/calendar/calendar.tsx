@@ -89,7 +89,6 @@ export function Calendar() {
 
   const {
     events,
-    isLoading,
     createEvent,
     updateEvent,
     deleteEvent,
@@ -211,18 +210,10 @@ export function Calendar() {
       />
 
       <div className="relative flex-1 overflow-hidden">
-        {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-muted-foreground">Loading events...</div>
-          </div>
-        ) : (
-          <>
-            {currentView === "day" && <DayView {...viewProps} />}
-            {currentView === "week" && <WeekView {...viewProps} />}
-            {currentView === "month" && <MonthView {...viewProps} />}
-            {currentView === "year" && <YearView {...viewProps} />}
-          </>
-        )}
+        {currentView === "day" && <DayView {...viewProps} />}
+        {currentView === "week" && <WeekView {...viewProps} />}
+        {currentView === "month" && <MonthView {...viewProps} />}
+        {currentView === "year" && <YearView {...viewProps} />}
       </div>
 
       <EventDialog
