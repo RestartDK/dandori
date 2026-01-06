@@ -28,7 +28,9 @@ function getViewRange(
       const dayOfWeek = start.getDay();
       start.setDate(start.getDate() - dayOfWeek);
       start.setHours(0, 0, 0, 0);
-      end.setDate(start.getDate() + 6);
+      // Set end from start to handle month boundaries correctly
+      end.setTime(start.getTime());
+      end.setDate(end.getDate() + 6);
       end.setHours(23, 59, 59, 999);
       break;
     }

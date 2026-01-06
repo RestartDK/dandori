@@ -545,6 +545,7 @@ export function TimeGrid({
                       columnDate={date}
                       columnWidth={columnWidth}
                       event={event}
+                      gridPaddingTop={TIME_GRID_PADDING_TOP}
                       isContinuation={isContinuation}
                       isSelected={isSelected}
                       key={event.id}

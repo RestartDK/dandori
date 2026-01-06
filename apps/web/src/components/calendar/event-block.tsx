@@ -21,6 +21,7 @@ interface EventBlockProps {
   isContinuation?: boolean;
   isSelected?: boolean;
   layoutStyle?: EventLayout;
+  gridPaddingTop?: number;
 }
 
 export function EventBlock({
@@ -38,6 +39,7 @@ export function EventBlock({
   isContinuation = false,
   isSelected = false,
   layoutStyle,
+  gridPaddingTop = 0,
 }: EventBlockProps) {
   const blockRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -129,15 +131,20 @@ export function EventBlock({
         }
       };
 
-      const handlePointerUp = (upEvent: PointerEvent) => {
+      const cleanup = (pointerId: number) => {
         setIsResizing(false);
         wasResizing.current = true;
         setTimeout(() => {
           wasResizing.current = false;
         }, 0);
-        target.releasePointerCapture(upEvent.pointerId);
+        target.releasePointerCapture(pointerId);
         target.removeEventListener("pointermove", handlePointerMove);
         target.removeEventListener("pointerup", handlePointerUp);
+        target.removeEventListener("pointercancel", handlePointerCancel);
+      };
+
+      const handlePointerUp = (upEvent: PointerEvent) => {
+        cleanup(upEvent.pointerId);
 
         if (!(onResizeEnd && blockRef.current)) {
           return;
@@ -149,7 +156,9 @@ export function EventBlock({
         const baseDate = columnDate ?? new Date(event.startTime);
         baseDate.setHours(startHour, 0, 0, 0);
 
-        const newStartHours = startHour + currentTop / slotHeight;
+        // Subtract gridPaddingTop since offsetTop includes the grid's top padding
+        const adjustedTop = currentTop - gridPaddingTop;
+        const newStartHours = startHour + adjustedTop / slotHeight;
         const durationHours = currentHeight / slotHeight;
 
         const newStart = new Date(baseDate);
@@ -171,10 +180,20 @@ export function EventBlock({
         onResizeEnd(event.id, newStart, newEnd);
       };
 
+      const handlePointerCancel = (cancelEvent: PointerEvent) => {
+        cleanup(cancelEvent.pointerId);
+        // Reset element styles to original values since resize was cancelled
+        if (blockRef.current) {
+          blockRef.current.style.top = `${originalTop.current}px`;
+          blockRef.current.style.height = `${originalHeight.current}px`;
+        }
+      };
+
       target.addEventListener("pointermove", handlePointerMove);
       target.addEventListener("pointerup", handlePointerUp);
+      target.addEventListener("pointercancel", handlePointerCancel);
     },
-    [event, onResizeEnd, slotHeight, startHour, columnDate]
+    [event, onResizeEnd, slotHeight, startHour, columnDate, gridPaddingTop]
   );
 
   const textColor = getContrastColor(event.color);
