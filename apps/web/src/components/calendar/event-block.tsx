@@ -1,3 +1,5 @@
+import type { PanInfo } from "motion/react";
+import { motion, useMotionValue } from "motion/react";
 import { useCallback, useRef, useState } from "react";
 import type { CalendarEvent } from "@/hooks/use-events";
 import { cn } from "@/lib/utils";
@@ -11,6 +13,7 @@ interface EventBlockProps {
   slotHeight: number;
   startHour?: number;
   columnDate?: Date;
+  columnWidth?: number;
   className?: string;
 }
 
@@ -23,56 +26,43 @@ export function EventBlock({
   slotHeight,
   startHour = 0,
   columnDate,
+  columnWidth = 0,
   className,
 }: EventBlockProps) {
   const blockRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const wasDragging = useRef(false);
+  const hasDragged = useRef(false);
   const wasResizing = useRef(false);
   const dragStartY = useRef(0);
   const originalTop = useRef(0);
   const originalHeight = useRef(0);
 
-  const handleDragStart = useCallback(
-    (e: React.DragEvent) => {
-      if (isResizing) {
-        e.preventDefault();
-        return;
-      }
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
 
-      setIsDragging(true);
-      dragStartY.current = e.clientY;
-      originalTop.current = blockRef.current?.offsetTop ?? 0;
-
-      e.dataTransfer.setData("text/plain", event.id);
-      e.dataTransfer.effectAllowed = "move";
-
-      const dragImage = document.createElement("div");
-      dragImage.style.opacity = "0";
-      document.body.appendChild(dragImage);
-      e.dataTransfer.setDragImage(dragImage, 0, 0);
-      setTimeout(() => document.body.removeChild(dragImage), 0);
-    },
-    [event.id, isResizing]
-  );
-
-  const handleDragEnd = useCallback(
-    (e: React.DragEvent) => {
+  const handleMotionDragEnd = useCallback(
+    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       setIsDragging(false);
-      wasDragging.current = true;
-      setTimeout(() => {
-        wasDragging.current = false;
-      }, 0);
+      x.set(0);
+      y.set(0);
 
-      if (!(onDragEnd && blockRef.current)) {
+      // Reset hasDragged after a delay to allow tap event to be blocked
+      setTimeout(() => {
+        hasDragged.current = false;
+      }, 200);
+
+      if (!onDragEnd) {
         return;
       }
 
-      const deltaY = e.clientY - dragStartY.current;
-      const deltaHours = Math.round(deltaY / slotHeight);
+      const deltaY = info.offset.y;
+      const deltaX = info.offset.x;
 
-      if (deltaHours === 0) {
+      const deltaHours = Math.round(deltaY / slotHeight);
+      const deltaDays = columnWidth > 0 ? Math.round(deltaX / columnWidth) : 0;
+
+      if (deltaHours === 0 && deltaDays === 0) {
         return;
       }
 
@@ -82,12 +72,14 @@ export function EventBlock({
       const newStart = new Date(eventStart);
       const newEnd = new Date(eventEnd);
 
+      newStart.setDate(newStart.getDate() + deltaDays);
       newStart.setHours(newStart.getHours() + deltaHours);
+      newEnd.setDate(newEnd.getDate() + deltaDays);
       newEnd.setHours(newEnd.getHours() + deltaHours);
 
       onDragEnd(event.id, newStart, newEnd);
     },
-    [event, onDragEnd, slotHeight]
+    [event, onDragEnd, slotHeight, columnWidth, x, y]
   );
 
   const handleResizeStart = useCallback(
@@ -177,31 +169,8 @@ export function EventBlock({
 
   const textColor = getContrastColor(event.color);
 
-  return (
-    <button
-      className={cn(
-        "absolute right-1 left-1 flex cursor-pointer flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-shadow hover:shadow-md",
-        isDragging && "opacity-50",
-        className
-      )}
-      draggable={!isResizing}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (wasDragging.current || wasResizing.current) {
-          return;
-        }
-        onClick?.(event);
-      }}
-      onDragEnd={handleDragEnd}
-      onDragStart={handleDragStart}
-      ref={blockRef}
-      style={{
-        backgroundColor: event.color,
-        color: textColor,
-        ...style,
-      }}
-      type="button"
-    >
+  const eventContent = (
+    <>
       <div
         className="absolute inset-x-0 top-0 h-2 cursor-ns-resize"
         onPointerDown={(e) => handleResizeStart(e, "top")}
@@ -223,7 +192,73 @@ export function EventBlock({
         className="absolute inset-x-0 bottom-0 h-2 cursor-ns-resize"
         onPointerDown={(e) => handleResizeStart(e, "bottom")}
       />
-    </button>
+    </>
+  );
+
+  return (
+    <>
+      {isDragging && (
+        <div
+          className={cn(
+            "pointer-events-none absolute right-1 left-1 flex flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs",
+            className
+          )}
+          style={{
+            backgroundColor: event.color,
+            color: textColor,
+            opacity: 0.3,
+            ...style,
+          }}
+        >
+          <div className="pointer-events-none">
+            <div className="truncate font-medium">{event.title}</div>
+            {!event.isAllDay && (
+              <div className="opacity-80">
+                {new Date(event.startTime).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <motion.button
+        className={cn(
+          "absolute right-1 left-1 flex cursor-grab flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-shadow hover:shadow-md",
+          isDragging && "cursor-grabbing",
+          className
+        )}
+        drag={!isResizing}
+        dragElastic={0}
+        dragMomentum={false}
+        onDragEnd={handleMotionDragEnd}
+        onDragStart={() => {
+          hasDragged.current = true;
+          setIsDragging(true);
+        }}
+        onTap={(e) => {
+          e.stopPropagation();
+          if (hasDragged.current || wasResizing.current) {
+            return;
+          }
+          onClick?.(event);
+        }}
+        ref={blockRef}
+        style={{
+          backgroundColor: event.color,
+          color: textColor,
+          x,
+          y,
+          ...style,
+        }}
+        type="button"
+        whileDrag={{ scale: 1.02, zIndex: 50 }}
+      >
+        {eventContent}
+      </motion.button>
+    </>
   );
 }
 

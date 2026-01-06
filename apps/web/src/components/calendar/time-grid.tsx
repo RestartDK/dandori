@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CalendarEvent } from "@/hooks/use-events";
@@ -91,6 +91,25 @@ export function TimeGrid({
 }: TimeGridProps) {
   const displayHours = HOURS.slice(startHour, endHour);
   const totalHeight = displayHours.length * slotHeight;
+  const columnRef = useRef<HTMLDivElement>(null);
+  const [columnWidth, setColumnWidth] = useState(0);
+
+  useEffect(() => {
+    const updateColumnWidth = () => {
+      if (columnRef.current) {
+        setColumnWidth(columnRef.current.offsetWidth);
+      }
+    };
+
+    updateColumnWidth();
+
+    const observer = new ResizeObserver(updateColumnWidth);
+    if (columnRef.current) {
+      observer.observe(columnRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -135,38 +154,6 @@ export function TimeGrid({
       onSlotClick(start, end);
     },
     [onSlotClick]
-  );
-
-  const handleColumnDrop = useCallback(
-    (e: React.DragEvent, date: Date) => {
-      e.preventDefault();
-      const eventId = e.dataTransfer.getData("text/plain");
-      if (!(eventId && onEventDrop)) {
-        return;
-      }
-
-      const rect = e.currentTarget.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-      const hour = Math.floor(y / slotHeight) + startHour;
-      const minutes =
-        Math.round((((y % slotHeight) / slotHeight) * 60) / 15) * 15;
-
-      const event = events.find((ev) => ev.id === eventId);
-      if (!event) {
-        return;
-      }
-
-      const eventStart = new Date(event.startTime);
-      const eventEnd = new Date(event.endTime);
-      const duration = eventEnd.getTime() - eventStart.getTime();
-
-      const newStart = new Date(date);
-      newStart.setHours(hour, minutes, 0, 0);
-      const newEnd = new Date(newStart.getTime() + duration);
-
-      onEventDrop(eventId, newStart, newEnd);
-    },
-    [events, onEventDrop, slotHeight, startHour]
   );
 
   return (
@@ -217,24 +204,19 @@ export function TimeGrid({
             ))}
           </div>
 
-          {dates.map((date) => {
+          {dates.map((date, index) => {
             const key = date.toISOString().split("T")[0];
             const dayEvents = eventsByDate.get(key ?? "") ?? [];
             const isToday = isSameDay(date, today);
 
             return (
-              // biome-ignore lint/a11y/noStaticElementInteractions: Drag-drop zone for calendar events requires div
-              // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Drag-drop zone for calendar events
-              // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-label provides context for screen readers
               <div
-                aria-label={`Events for ${date.toLocaleDateString()}`}
                 className={cn(
                   "relative flex-1 border-l",
                   isToday && "bg-primary/5"
                 )}
                 key={date.toISOString()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleColumnDrop(e, date)}
+                ref={index === 0 ? columnRef : undefined}
               >
                 {displayHours.map((hour) => (
                   <button
@@ -260,6 +242,7 @@ export function TimeGrid({
                   return (
                     <EventBlock
                       columnDate={date}
+                      columnWidth={columnWidth}
                       event={event}
                       key={event.id}
                       onClick={onEventClick}
