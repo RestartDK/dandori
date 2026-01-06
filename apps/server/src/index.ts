@@ -1,6 +1,7 @@
 import { auth } from "@dandori-ai/auth";
 import { db } from "@dandori-ai/db";
 import { event } from "@dandori-ai/db/schema";
+import { env } from "@dandori-ai/env";
 import { cors } from "@elysiajs/cors";
 import { and, eq, gte, lte } from "drizzle-orm";
 import {
@@ -61,7 +62,7 @@ async function getSessionUser(request: Request) {
 const app = new Elysia()
   .use(
     cors({
-      origin: process.env.CORS_ORIGIN || "",
+      origin: env.CORS_ORIGIN,
       methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
@@ -229,8 +230,8 @@ const app = new Elysia()
       },
     }
   )
-  .listen(process.env.PORT || 3000, () => {
-    console.log("Server is running on http://localhost:3000");
+  .listen(env.PORT, () => {
+    console.log(`Server is running on http://localhost:${env.PORT}`);
   });
 
 export type App = typeof app;

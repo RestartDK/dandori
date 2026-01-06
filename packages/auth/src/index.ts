@@ -1,5 +1,6 @@
 import { db } from "@dandori-ai/db";
 import * as schema from "@dandori-ai/db/schema/auth";
+import { env } from "@dandori-ai/env";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
@@ -9,14 +10,14 @@ export const auth = betterAuth({
 
     schema,
   }),
-  trustedOrigins: [process.env.CORS_ORIGIN || ""],
+  trustedOrigins: [env.CORS_ORIGIN ?? ""],
   emailAndPassword: {
     enabled: true,
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
       prompt: "select_account",
       accessType: "offline",
       scope: [

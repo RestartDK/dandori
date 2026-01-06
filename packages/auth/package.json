@@ -17,6 +17,7 @@
   "dependencies": {
     "better-auth": "catalog:",
     "zod": "catalog:",
-    "@dandori-ai/db": "workspace:*"
+    "@dandori-ai/db": "workspace:*",
+    "@dandori-ai/env": "workspace:*"
   }
 }
