@@ -74,9 +74,8 @@ export function Calendar() {
     localStorage.setItem(CALENDAR_VIEW_KEY, currentView);
   }, [currentView]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null
-  );
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [defaultEventStart, setDefaultEventStart] = useState<
     Date | undefined
   >();
@@ -131,14 +130,23 @@ export function Calendar() {
   );
 
   const handleAddEvent = useCallback((start?: Date, end?: Date) => {
-    setSelectedEvent(null);
+    setEditingEvent(null);
+    setSelectedEventId(null);
     setDefaultEventStart(start);
     setDefaultEventEnd(end);
     setDialogOpen(true);
   }, []);
 
-  const handleEventClick = useCallback((event: CalendarEvent) => {
-    setSelectedEvent(event);
+  const handleEventSelect = useCallback((event: CalendarEvent) => {
+    setSelectedEventId((prev) => (prev === event.id ? null : event.id));
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedEventId(null);
+  }, []);
+
+  const handleEventEdit = useCallback((event: CalendarEvent) => {
+    setEditingEvent(event);
     setDefaultEventStart(undefined);
     setDefaultEventEnd(undefined);
     setDialogOpen(true);
@@ -168,13 +176,13 @@ export function Calendar() {
 
   const handleSave = useCallback(
     async (data: CreateEventInput) => {
-      if (selectedEvent) {
-        await updateEvent({ id: selectedEvent.id, ...data });
+      if (editingEvent) {
+        await updateEvent({ id: editingEvent.id, ...data });
       } else {
         await createEvent(data);
       }
     },
-    [selectedEvent, createEvent, updateEvent]
+    [editingEvent, createEvent, updateEvent]
   );
 
   const handleDelete = useCallback(
@@ -192,7 +200,10 @@ export function Calendar() {
   const viewProps = {
     currentDate,
     events,
-    onEventClick: handleEventClick,
+    onEventClick: handleEventEdit,
+    onEventSelect: handleEventSelect,
+    onClearSelection: handleClearSelection,
+    selectedEventId,
     onEventDrop: handleEventDrop,
     onEventResize: handleEventResize,
     onSlotClick: handleAddEvent,
@@ -219,7 +230,7 @@ export function Calendar() {
       <EventDialog
         defaultEnd={defaultEventEnd}
         defaultStart={defaultEventStart}
-        event={selectedEvent}
+        event={editingEvent}
         isDeleting={isDeleting}
         isSaving={isCreating || isUpdating}
         onDelete={handleDelete}

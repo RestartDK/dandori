@@ -4,10 +4,13 @@ import { useCallback, useRef, useState } from "react";
 import type { CalendarEvent } from "@/hooks/use-events";
 import { cn } from "@/lib/utils";
 
+import type { EventLayout } from "./time-grid";
+
 interface EventBlockProps {
   event: CalendarEvent;
   style?: React.CSSProperties;
-  onClick?: (event: CalendarEvent) => void;
+  onSelect?: (event: CalendarEvent) => void;
+  onEdit?: (event: CalendarEvent) => void;
   onDragEnd?: (eventId: string, newStart: Date, newEnd: Date) => void;
   onResizeEnd?: (eventId: string, newStart: Date, newEnd: Date) => void;
   slotHeight: number;
@@ -16,12 +19,15 @@ interface EventBlockProps {
   columnWidth?: number;
   className?: string;
   isContinuation?: boolean;
+  isSelected?: boolean;
+  layoutStyle?: EventLayout;
 }
 
 export function EventBlock({
   event,
   style,
-  onClick,
+  onSelect,
+  onEdit,
   onDragEnd,
   onResizeEnd,
   slotHeight,
@@ -30,6 +36,8 @@ export function EventBlock({
   columnWidth = 0,
   className,
   isContinuation = false,
+  isSelected = false,
+  layoutStyle,
 }: EventBlockProps) {
   const blockRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -171,6 +179,25 @@ export function EventBlock({
 
   const textColor = getContrastColor(event.color);
 
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!(hasDragged.current || wasResizing.current)) {
+        onEdit?.(event);
+      }
+    },
+    [event, onEdit]
+  );
+
+  const computedStyle: React.CSSProperties = layoutStyle
+    ? {
+        width: layoutStyle.width,
+        left: layoutStyle.left,
+        right: "auto",
+        zIndex: isSelected ? 50 : layoutStyle.zIndex,
+      }
+    : {};
+
   const eventContent = (
     <>
       <div
@@ -202,13 +229,15 @@ export function EventBlock({
       {isDragging && (
         <div
           className={cn(
-            "pointer-events-none absolute right-1 left-1 flex flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs",
+            "pointer-events-none absolute flex flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs",
+            !layoutStyle && "right-1 left-1",
             className
           )}
           style={{
             backgroundColor: event.color,
             color: textColor,
             opacity: 0.3,
+            ...computedStyle,
             ...style,
           }}
         >
@@ -228,13 +257,15 @@ export function EventBlock({
 
       <motion.button
         className={cn(
-          "absolute right-1 left-1 flex cursor-grab flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-shadow hover:shadow-md",
+          "absolute flex cursor-grab flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs",
           isDragging && "cursor-grabbing",
+          !layoutStyle && "right-1 left-1",
           className
         )}
         drag={!isResizing}
         dragElastic={0}
         dragMomentum={false}
+        onDoubleClick={handleDoubleClick}
         onDragEnd={handleMotionDragEnd}
         onDragStart={() => {
           hasDragged.current = true;
@@ -245,14 +276,16 @@ export function EventBlock({
           if (hasDragged.current || wasResizing.current) {
             return;
           }
-          onClick?.(event);
+          onSelect?.(event);
         }}
         ref={blockRef}
         style={{
           backgroundColor: event.color,
           color: textColor,
+          opacity: isSelected ? 1 : 0.7,
           x,
           y,
+          ...computedStyle,
           ...style,
         }}
         type="button"

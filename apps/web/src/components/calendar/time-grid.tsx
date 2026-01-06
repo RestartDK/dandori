@@ -6,6 +6,12 @@ import { cn } from "@/lib/utils";
 
 import { EventBlock } from "./event-block";
 
+export interface EventLayout {
+  width: string;
+  left: string;
+  zIndex: number;
+}
+
 interface TimeGridProps {
   dates: Date[];
   events: CalendarEvent[];
@@ -13,6 +19,9 @@ interface TimeGridProps {
   endHour?: number;
   slotHeight?: number;
   onEventClick?: (event: CalendarEvent) => void;
+  onEventSelect?: (event: CalendarEvent) => void;
+  onClearSelection?: () => void;
+  selectedEventId?: string | null;
   onEventDrop?: (eventId: string, newStart: Date, newEnd: Date) => void;
   onEventResize?: (eventId: string, newStart: Date, newEnd: Date) => void;
   onSlotClick?: (start: Date, end: Date) => void;
@@ -88,6 +97,152 @@ function getContrastColor(hexColor: string): string {
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
 
+function getEventTimes(event: CalendarEvent): { start: number; end: number } {
+  return {
+    start: new Date(event.startTime).getTime(),
+    end: new Date(event.endTime).getTime(),
+  };
+}
+
+function eventsOverlap(a: CalendarEvent, b: CalendarEvent): boolean {
+  const aTime = getEventTimes(a);
+  const bTime = getEventTimes(b);
+  return aTime.start < bTime.end && aTime.end > bTime.start;
+}
+
+function areExactSameTime(a: CalendarEvent, b: CalendarEvent): boolean {
+  const aTime = getEventTimes(a);
+  const bTime = getEventTimes(b);
+  return aTime.start === bTime.start && aTime.end === bTime.end;
+}
+
+function sortEventsByTime(events: CalendarEvent[]): CalendarEvent[] {
+  return [...events].sort((a, b) => {
+    const aTime = getEventTimes(a);
+    const bTime = getEventTimes(b);
+    if (aTime.start !== bTime.start) {
+      return aTime.start - bTime.start;
+    }
+    return bTime.end - aTime.end;
+  });
+}
+
+function findExactTimeGroups(sortedEvents: CalendarEvent[]): {
+  groups: CalendarEvent[][];
+  processedIds: Set<string>;
+} {
+  const groups: CalendarEvent[][] = [];
+  const processedIds = new Set<string>();
+
+  for (const event of sortedEvents) {
+    if (processedIds.has(event.id)) {
+      continue;
+    }
+
+    const exactMatches = sortedEvents.filter(
+      (other) => !processedIds.has(other.id) && areExactSameTime(event, other)
+    );
+
+    if (exactMatches.length > 1) {
+      groups.push(exactMatches);
+      for (const match of exactMatches) {
+        processedIds.add(match.id);
+      }
+    }
+  }
+
+  return { groups, processedIds };
+}
+
+function assignSideBySideLayouts(
+  groups: CalendarEvent[][],
+  selectedEventId: string | null | undefined,
+  layouts: Map<string, EventLayout>
+): void {
+  for (const group of groups) {
+    const columnCount = group.length;
+    const widthPercent = 100 / columnCount;
+
+    for (let i = 0; i < group.length; i++) {
+      const event = group[i];
+      if (!event) {
+        continue;
+      }
+      const isSelected = event.id === selectedEventId;
+      layouts.set(event.id, {
+        width: `${widthPercent}%`,
+        left: `${i * widthPercent}%`,
+        zIndex: isSelected ? 50 : 10 + i,
+      });
+    }
+  }
+}
+
+function calculateOverlapLevel(
+  event: CalendarEvent,
+  previousEvents: CalendarEvent[],
+  layouts: Map<string, EventLayout>
+): number {
+  let overlapLevel = 0;
+  for (const prevEvent of previousEvents) {
+    if (eventsOverlap(event, prevEvent)) {
+      const prevLayout = layouts.get(prevEvent.id);
+      const prevLevel = prevLayout ? Number.parseFloat(prevLayout.left) / 5 : 0;
+      overlapLevel = Math.max(overlapLevel, prevLevel + 1);
+    }
+  }
+  return overlapLevel;
+}
+
+function assignPartialOverlapLayouts(
+  remainingEvents: CalendarEvent[],
+  selectedEventId: string | null | undefined,
+  layouts: Map<string, EventLayout>
+): void {
+  for (let i = 0; i < remainingEvents.length; i++) {
+    const event = remainingEvents[i];
+    if (!event) {
+      continue;
+    }
+
+    const overlapLevel = calculateOverlapLevel(
+      event,
+      remainingEvents.slice(0, i),
+      layouts
+    );
+    const isSelected = event.id === selectedEventId;
+    const leftPercent = Math.min(overlapLevel * 5, 20);
+    const widthPercent = 100 - leftPercent;
+
+    layouts.set(event.id, {
+      width: `calc(${widthPercent}% - 4px)`,
+      left: `${leftPercent}%`,
+      zIndex: isSelected ? 50 : 10 + overlapLevel,
+    });
+  }
+}
+
+function calculateEventLayouts(
+  events: CalendarEvent[],
+  selectedEventId?: string | null
+): Map<string, EventLayout> {
+  const layouts = new Map<string, EventLayout>();
+
+  if (events.length === 0) {
+    return layouts;
+  }
+
+  const sortedEvents = sortEventsByTime(events);
+  const { groups, processedIds } = findExactTimeGroups(sortedEvents);
+
+  assignSideBySideLayouts(groups, selectedEventId, layouts);
+
+  const remainingEvents = sortedEvents.filter((e) => !processedIds.has(e.id));
+  assignPartialOverlapLayouts(remainingEvents, selectedEventId, layouts);
+
+  return layouts;
+}
+
 interface AllDayEventBlockProps {
   event: CalendarEvent;
   onClick?: (event: CalendarEvent) => void;
@@ -98,7 +253,7 @@ function AllDayEventBlock({ event, onClick }: AllDayEventBlockProps) {
 
   return (
     <button
-      className="flex w-full items-center truncate rounded px-2 text-left font-medium text-xs transition-opacity hover:opacity-90"
+      className="flex w-full items-center truncate rounded px-2 text-left font-medium text-xs"
       onClick={() => onClick?.(event)}
       style={{
         backgroundColor: event.color,
@@ -119,6 +274,9 @@ export function TimeGrid({
   endHour = 24,
   slotHeight = 60,
   onEventClick,
+  onEventSelect,
+  onClearSelection,
+  selectedEventId,
   onEventDrop,
   onEventResize,
   onSlotClick,
@@ -215,6 +373,19 @@ export function TimeGrid({
       )
     : 0;
 
+  const eventLayoutsByDate = useMemo(() => {
+    const map = new Map<string, Map<string, EventLayout>>();
+
+    for (const date of dates) {
+      const key = date.toISOString().split("T")[0] ?? "";
+      const dayEvents = eventsByDate.get(key) ?? [];
+      const layouts = calculateEventLayouts(dayEvents, selectedEventId);
+      map.set(key, layouts);
+    }
+
+    return map;
+  }, [dates, eventsByDate, selectedEventId]);
+
   const handleSlotClick = useCallback(
     (date: Date, hour: number) => {
       if (!onSlotClick) {
@@ -230,6 +401,10 @@ export function TimeGrid({
     },
     [onSlotClick]
   );
+
+  const handleGridClick = useCallback(() => {
+    onClearSelection?.();
+  }, [onClearSelection]);
 
   return (
     <div className="flex h-full flex-col">
@@ -337,6 +512,7 @@ export function TimeGrid({
                   <button
                     className="block w-full border-b"
                     key={hour}
+                    onClick={handleGridClick}
                     onDoubleClick={() => handleSlotClick(date, hour)}
                     style={{ height: slotHeight }}
                     type="button"
@@ -360,16 +536,23 @@ export function TimeGrid({
                   dayStart.setHours(0, 0, 0, 0);
                   const isContinuation = eventStart < dayStart;
 
+                  const layouts = eventLayoutsByDate.get(key ?? "");
+                  const layout = layouts?.get(event.id);
+                  const isSelected = event.id === selectedEventId;
+
                   return (
                     <EventBlock
                       columnDate={date}
                       columnWidth={columnWidth}
                       event={event}
                       isContinuation={isContinuation}
+                      isSelected={isSelected}
                       key={event.id}
-                      onClick={onEventClick}
+                      layoutStyle={layout}
                       onDragEnd={onEventDrop}
+                      onEdit={onEventClick}
                       onResizeEnd={onEventResize}
+                      onSelect={onEventSelect}
                       slotHeight={slotHeight}
                       startHour={startHour}
                       style={{

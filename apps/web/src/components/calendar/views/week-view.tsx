@@ -8,6 +8,9 @@ interface WeekViewProps {
   currentDate: Date;
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
+  onEventSelect?: (event: CalendarEvent) => void;
+  onClearSelection?: () => void;
+  selectedEventId?: string | null;
   onEventDrop?: (eventId: string, newStart: Date, newEnd: Date) => void;
   onEventResize?: (eventId: string, newStart: Date, newEnd: Date) => void;
   onSlotClick?: (start: Date, end: Date) => void;
@@ -17,6 +20,9 @@ export function WeekView({
   currentDate,
   events,
   onEventClick,
+  onEventSelect,
+  onClearSelection,
+  selectedEventId,
   onEventDrop,
   onEventResize,
   onSlotClick,
@@ -38,10 +44,13 @@ export function WeekView({
     <TimeGrid
       dates={dates}
       events={events}
+      onClearSelection={onClearSelection}
       onEventClick={onEventClick}
       onEventDrop={onEventDrop}
       onEventResize={onEventResize}
+      onEventSelect={onEventSelect}
       onSlotClick={onSlotClick}
+      selectedEventId={selectedEventId}
       showDayHeader={true}
     />
   );
