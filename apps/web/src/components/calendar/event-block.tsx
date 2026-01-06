@@ -158,24 +158,33 @@ export function EventBlock({
 
         // Subtract gridPaddingTop since offsetTop includes the grid's top padding
         const adjustedTop = currentTop - gridPaddingTop;
-        const newStartHours = startHour + adjustedTop / slotHeight;
         const durationHours = currentHeight / slotHeight;
 
-        const newStart = new Date(baseDate);
-        newStart.setHours(
-          Math.floor(newStartHours),
-          (newStartHours % 1) * 60,
-          0,
-          0
-        );
+        let newStart: Date;
+        let newEnd: Date;
 
-        const newEnd = new Date(newStart);
-        newEnd.setHours(
-          newStart.getHours() + Math.floor(durationHours),
-          newStart.getMinutes() + (durationHours % 1) * 60,
-          0,
-          0
-        );
+        if (direction === "bottom") {
+          // Bottom resize: keep original start time, only change end time
+          newStart = new Date(event.startTime);
+          newEnd = new Date(newStart);
+          newEnd.setHours(
+            newStart.getHours() + Math.floor(durationHours),
+            newStart.getMinutes() + (durationHours % 1) * 60,
+            0,
+            0
+          );
+        } else {
+          // Top resize: change start time, keep original end time
+          const newStartHours = startHour + adjustedTop / slotHeight;
+          newStart = new Date(baseDate);
+          newStart.setHours(
+            Math.floor(newStartHours),
+            (newStartHours % 1) * 60,
+            0,
+            0
+          );
+          newEnd = new Date(event.endTime);
+        }
 
         onResizeEnd(event.id, newStart, newEnd);
       };
