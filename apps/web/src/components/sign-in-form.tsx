@@ -1,12 +1,12 @@
 import { useForm } from "@tanstack/react-form";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Chrome } from "lucide-react";
 import { toast } from "sonner";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
+import { GoogleIcon } from "./icons/google";
 import Loader from "./loader";
 import { Button } from "./ui/button";
 import {
@@ -38,6 +38,7 @@ export default function SignInForm({
   const handleGoogleSignIn = async (): Promise<void> => {
     await authClient.signIn.social({
       provider: "google",
+      callbackURL: window.location.origin,
     });
   };
 
@@ -152,7 +153,7 @@ export default function SignInForm({
                   type="button"
                   variant="outline"
                 >
-                  <Chrome />
+                  <GoogleIcon className="size-4" />
                   Login with Google
                 </Button>
                 <FieldDescription className="text-center">
