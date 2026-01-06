@@ -20,6 +20,9 @@ interface TimeGridProps {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const ALL_DAY_EVENT_HEIGHT = 24;
+const TIME_GRID_PADDING_TOP = 12;
+const TIME_GRID_PADDING_BOTTOM = 16;
 
 function formatHour(hour: number): string {
   if (hour === 0) {
@@ -74,6 +77,38 @@ function isSameDay(date1: Date, date2: Date): boolean {
     date1.getFullYear() === date2.getFullYear() &&
     date1.getMonth() === date2.getMonth() &&
     date1.getDate() === date2.getDate()
+  );
+}
+
+function getContrastColor(hexColor: string): string {
+  const r = Number.parseInt(hexColor.slice(1, 3), 16);
+  const g = Number.parseInt(hexColor.slice(3, 5), 16);
+  const b = Number.parseInt(hexColor.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? "#000000" : "#ffffff";
+}
+
+interface AllDayEventBlockProps {
+  event: CalendarEvent;
+  onClick?: (event: CalendarEvent) => void;
+}
+
+function AllDayEventBlock({ event, onClick }: AllDayEventBlockProps) {
+  const textColor = getContrastColor(event.color);
+
+  return (
+    <button
+      className="flex w-full items-center truncate rounded px-2 text-left font-medium text-xs transition-opacity hover:opacity-90"
+      onClick={() => onClick?.(event)}
+      style={{
+        backgroundColor: event.color,
+        color: textColor,
+        height: ALL_DAY_EVENT_HEIGHT,
+      }}
+      type="button"
+    >
+      {event.title}
+    </button>
   );
 }
 
@@ -140,6 +175,46 @@ export function TimeGrid({
     return map;
   }, [dates, events]);
 
+  const allDayEventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+
+    for (const date of dates) {
+      const key = date.toISOString().split("T")[0];
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const allDayEvents = events.filter((event) => {
+        if (!event.isAllDay) {
+          return false;
+        }
+        const start = new Date(event.startTime);
+        const end = new Date(event.endTime);
+        return start <= dayEnd && end >= dayStart;
+      });
+      map.set(key ?? "", allDayEvents);
+    }
+
+    return map;
+  }, [dates, events]);
+
+  const maxAllDayEvents = useMemo(() => {
+    let max = 0;
+    for (const dayEvents of allDayEventsByDate.values()) {
+      max = Math.max(max, dayEvents.length);
+    }
+    return max;
+  }, [allDayEventsByDate]);
+
+  const hasAllDayEvents = maxAllDayEvents > 0;
+  const allDayRowHeight = hasAllDayEvents
+    ? Math.max(
+        ALL_DAY_EVENT_HEIGHT + 8,
+        maxAllDayEvents * (ALL_DAY_EVENT_HEIGHT + 4) + 8
+      )
+    : 0;
+
   const handleSlotClick = useCallback(
     (date: Date, hour: number) => {
       if (!onSlotClick) {
@@ -188,12 +263,50 @@ export function TimeGrid({
         </div>
       )}
 
+      {hasAllDayEvents && (
+        <div className="flex border-b" style={{ minHeight: allDayRowHeight }}>
+          <div className="flex w-16 shrink-0 items-center justify-end pr-2">
+            <span className="text-muted-foreground text-xs">All day</span>
+          </div>
+          {dates.map((date) => {
+            const key = date.toISOString().split("T")[0];
+            const dayAllDayEvents = allDayEventsByDate.get(key ?? "") ?? [];
+            const isToday = isSameDay(date, today);
+
+            return (
+              <div
+                className={cn(
+                  "relative flex flex-1 flex-col gap-1 border-l p-1",
+                  isToday && "bg-primary/5"
+                )}
+                key={date.toISOString()}
+              >
+                {dayAllDayEvents.map((event) => (
+                  <AllDayEventBlock
+                    event={event}
+                    key={event.id}
+                    onClick={onEventClick}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <ScrollArea className="h-full flex-1 overflow-hidden">
-        <div className="flex" style={{ minHeight: totalHeight }}>
+        <div
+          className="flex"
+          style={{
+            minHeight:
+              totalHeight + TIME_GRID_PADDING_TOP + TIME_GRID_PADDING_BOTTOM,
+          }}
+        >
           <div className="w-16 shrink-0">
+            <div style={{ height: TIME_GRID_PADDING_TOP }} />
             {displayHours.map((hour) => (
               <div
-                className="relative border-b pr-2 text-right text-muted-foreground text-xs"
+                className="relative pr-2 text-right text-muted-foreground text-xs"
                 key={hour}
                 style={{ height: slotHeight }}
               >
@@ -202,6 +315,7 @@ export function TimeGrid({
                 </span>
               </div>
             ))}
+            <div style={{ height: TIME_GRID_PADDING_BOTTOM }} />
           </div>
 
           {dates.map((date, index) => {
@@ -218,6 +332,7 @@ export function TimeGrid({
                 key={date.toISOString()}
                 ref={index === 0 ? columnRef : undefined}
               >
+                <div style={{ height: TIME_GRID_PADDING_TOP }} />
                 {displayHours.map((hour) => (
                   <button
                     className="block w-full border-b"
@@ -227,6 +342,7 @@ export function TimeGrid({
                     type="button"
                   />
                 ))}
+                <div style={{ height: TIME_GRID_PADDING_BOTTOM }} />
 
                 {dayEvents.map((event) => {
                   const position = getEventPosition(
@@ -239,11 +355,17 @@ export function TimeGrid({
                     return null;
                   }
 
+                  const eventStart = new Date(event.startTime);
+                  const dayStart = new Date(date);
+                  dayStart.setHours(0, 0, 0, 0);
+                  const isContinuation = eventStart < dayStart;
+
                   return (
                     <EventBlock
                       columnDate={date}
                       columnWidth={columnWidth}
                       event={event}
+                      isContinuation={isContinuation}
                       key={event.id}
                       onClick={onEventClick}
                       onDragEnd={onEventDrop}
@@ -251,7 +373,7 @@ export function TimeGrid({
                       slotHeight={slotHeight}
                       startHour={startHour}
                       style={{
-                        top: position.top,
+                        top: position.top + TIME_GRID_PADDING_TOP,
                         height: position.height,
                       }}
                     />
