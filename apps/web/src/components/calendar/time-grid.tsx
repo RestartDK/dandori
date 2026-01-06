@@ -28,6 +28,43 @@ interface TimeGridProps {
   showDayHeader?: boolean;
 }
 
+interface CurrentTimeIndicatorProps {
+  startHour: number;
+  slotHeight: number;
+  paddingTop: number;
+}
+
+function CurrentTimeIndicator({
+  startHour,
+  slotHeight,
+  paddingTop,
+}: CurrentTimeIndicatorProps) {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentHour = currentTime.getHours();
+  const currentMinutes = currentTime.getMinutes();
+  const totalMinutes = (currentHour - startHour) * 60 + currentMinutes;
+  const topPosition = (totalMinutes / 60) * slotHeight + paddingTop;
+
+  return (
+    <div
+      className="pointer-events-none absolute right-0 left-0 z-30 flex items-center"
+      style={{ top: topPosition }}
+    >
+      <div className="-ml-1.5 size-3 rounded-full bg-red-500" />
+      <div className="h-0.5 flex-1 bg-red-500" />
+    </div>
+  );
+}
+
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const ALL_DAY_EVENT_HEIGHT = 24;
 const TIME_GRID_PADDING_TOP = 12;
@@ -519,6 +556,14 @@ export function TimeGrid({
                   />
                 ))}
                 <div style={{ height: TIME_GRID_PADDING_BOTTOM }} />
+
+                {isToday && (
+                  <CurrentTimeIndicator
+                    paddingTop={TIME_GRID_PADDING_TOP}
+                    slotHeight={slotHeight}
+                    startHour={startHour}
+                  />
+                )}
 
                 {dayEvents.map((event) => {
                   const position = getEventPosition(
