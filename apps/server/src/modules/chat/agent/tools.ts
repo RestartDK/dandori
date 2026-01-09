@@ -185,17 +185,24 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
 
       // Only update fields that have actual values (not empty strings)
       const updateData: Partial<typeof event.$inferInsert> = {};
-      if (input.title !== undefined && input.title !== "")
+      if (input.title !== undefined && input.title !== "") {
         updateData.title = input.title;
-      if (input.description !== undefined)
+      }
+      if (input.description !== undefined) {
         updateData.description = input.description;
-      if (input.startTime !== undefined && input.startTime !== "")
+      }
+      if (input.startTime !== undefined && input.startTime !== "") {
         updateData.startTime = new Date(input.startTime);
-      if (input.endTime !== undefined && input.endTime !== "")
+      }
+      if (input.endTime !== undefined && input.endTime !== "") {
         updateData.endTime = new Date(input.endTime);
-      if (input.isAllDay !== undefined) updateData.isAllDay = input.isAllDay;
-      if (input.color !== undefined && input.color !== "")
+      }
+      if (input.isAllDay !== undefined) {
+        updateData.isAllDay = input.isAllDay;
+      }
+      if (input.color !== undefined && input.color !== "") {
         updateData.color = input.color;
+      }
 
       const [updatedEvent] = await db
         .update(event)
