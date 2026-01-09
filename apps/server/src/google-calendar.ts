@@ -29,7 +29,18 @@ async function getGoogleOAuth2Client(userId: string) {
     .from(account)
     .where(and(eq(account.userId, userId), eq(account.providerId, "google")));
 
-  if (!(googleAccount?.accessToken && googleAccount.refreshToken)) {
+  if (!googleAccount) {
+    console.warn("[Google Sync] No Google account linked for user:", userId);
+    return null;
+  }
+
+  if (!googleAccount.accessToken) {
+    console.warn("[Google Sync] No access token for user:", userId);
+    return null;
+  }
+
+  if (!googleAccount.refreshToken) {
+    console.warn("[Google Sync] No refresh token for user:", userId);
     return null;
   }
 
@@ -46,6 +57,7 @@ async function getGoogleOAuth2Client(userId: string) {
 
   // Handle token refresh - update stored tokens when refreshed
   oauth2Client.on("tokens", async (tokens) => {
+    console.log("[Google Sync] Token refreshed for user:", userId);
     await db
       .update(account)
       .set({
@@ -75,6 +87,11 @@ export async function syncGoogleCalendarEvents(
     return;
   }
 
+  console.log("[Google Sync] Starting sync for user:", userId, {
+    timeMin: timeMin.toISOString(),
+    timeMax: timeMax.toISOString(),
+  });
+
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
   const response = await calendar.events.list({
@@ -87,6 +104,11 @@ export async function syncGoogleCalendarEvents(
   });
 
   const googleEvents = response.data.items ?? [];
+  console.log(
+    "[Google Sync] Fetched",
+    googleEvents.length,
+    "events from Google Calendar"
+  );
 
   for (const gEvent of googleEvents) {
     if (!(gEvent.id && gEvent.start)) {
