@@ -27,6 +27,36 @@
 Monorepo with Turborepo: `apps/` (web, server) and `packages/` (auth, db, config).
 TypeScript strict mode with `noUncheckedIndexedAccess`, `noUnusedLocals/Parameters`.
 
+### Server Architecture (Feature-Based Modules)
+
+The server follows a feature-based module structure:
+
+```
+apps/server/src/
+  index.ts              # Entrypoint - composes modules
+  lib/
+    auth.ts             # Shared utilities (getSessionUser)
+  modules/
+    events/              # Events feature module
+      index.ts          # Elysia controller (routes)
+      service.ts        # Business logic (DB operations)
+      model.ts          # TypeBox schemas
+    chat/                # Chat feature module
+      index.ts          # Elysia controller (routes)
+      service.ts        # Business logic (tool execution)
+      model.ts          # TypeBox schemas
+      agent/            # Agent implementation
+        calendar-agent.ts
+        tools.ts
+```
+
+**Key principles:**
+
+- **Use path aliases**: Always use `@/*` imports instead of relative paths (`../`)
+- **Separation of concerns**: Controllers handle HTTP, services handle business logic
+- **Shared utilities**: Common code (like auth) goes in `lib/`
+- **Module composition**: `index.ts` composes modules via `.use()`
+
 ## UI Components
 
 **NEVER** edit files in `apps/web/src/components/ui/` unless specifically requested. These are atomic shadcn components and should remain untouched. Apply styling overrides via `className` props when using these components.
@@ -71,6 +101,10 @@ env.VITE_SERVER_URL  // required - throws if missing
 ```
 
 **Never** use raw `process.env` or `import.meta.env` directly. Always use the typed `env` object.
+
+### Turborepo Configuration
+
+**ALWAYS** add new environment variables to `turbo.json` when adding them to the codebase. Environment variables used at runtime must be declared in the relevant task's `env` array (e.g., `server#start`, `web#build`) so Turborepo knows they're required dependencies. This ensures proper caching and deployment configuration.
 
 ## Deployment
 
