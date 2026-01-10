@@ -28,17 +28,14 @@ async function getGoogleOAuth2Client(userId: string) {
     .where(and(eq(account.userId, userId), eq(account.providerId, "google")));
 
   if (!googleAccount) {
-    console.warn("[Google Sync] No Google account linked for user:", userId);
     return null;
   }
 
   if (!googleAccount.accessToken) {
-    console.warn("[Google Sync] No access token for user:", userId);
     return null;
   }
 
   if (!googleAccount.refreshToken) {
-    console.warn("[Google Sync] No refresh token for user:", userId);
     return null;
   }
 
@@ -55,7 +52,6 @@ async function getGoogleOAuth2Client(userId: string) {
 
   // Handle token refresh - update stored tokens when refreshed
   oauth2Client.on("tokens", async (tokens) => {
-    console.log("[Google Sync] Token refreshed for user:", userId);
     await db
       .update(account)
       .set({
@@ -80,17 +76,9 @@ export async function syncGoogleCalendars(userId: string): Promise<void> {
     return;
   }
 
-  console.log("[Google Sync] Syncing calendars for user:", userId);
-
   const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
   const response = await calendarApi.calendarList.list();
   const googleCalendars = response.data.items ?? [];
-
-  console.log(
-    "[Google Sync] Fetched",
-    googleCalendars.length,
-    "calendars from Google"
-  );
 
   for (const gCal of googleCalendars) {
     if (!gCal.id) {
@@ -155,15 +143,8 @@ export async function syncGoogleCalendarEvents(
     .where(and(eq(calendar.userId, userId), eq(calendar.isVisible, true)));
 
   if (visibleCalendars.length === 0) {
-    console.log("[Google Sync] No visible calendars for user:", userId);
     return;
   }
-
-  console.log("[Google Sync] Starting sync for user:", userId, {
-    timeMin: timeMin.toISOString(),
-    timeMax: timeMax.toISOString(),
-    calendars: visibleCalendars.length,
-  });
 
   const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
 
@@ -178,18 +159,6 @@ export async function syncGoogleCalendarEvents(
     });
 
     const googleEvents = response.data.items ?? [];
-    console.log("[Google Sync] Calendar:", cal.name, {
-      googleCalendarId: cal.googleCalendarId,
-      color: cal.color,
-      eventCount: googleEvents.length,
-      events: googleEvents.map((e) => ({
-        id: e.id,
-        title: e.summary,
-        start: e.start?.dateTime ?? e.start?.date,
-        end: e.end?.dateTime ?? e.end?.date,
-        isAllDay: !e.start?.dateTime,
-      })),
-    });
 
     for (const gEvent of googleEvents) {
       if (!(gEvent.id && gEvent.start)) {
@@ -352,10 +321,6 @@ export async function createGoogleEvent(
   const oauth2Client = await getGoogleOAuth2Client(userId);
 
   if (!oauth2Client) {
-    console.warn(
-      "[Google Sync] Cannot create event - no OAuth client for user:",
-      userId
-    );
     return null;
   }
 
@@ -391,18 +356,8 @@ export async function createGoogleEvent(
       requestBody: eventBody,
     });
 
-    console.log("[Google Sync] Created event:", {
-      googleEventId: response.data.id,
-      title: eventData.title,
-    });
-
     return response.data.id ?? null;
   } catch (error) {
-    console.error("[Google Sync] Failed to create event:", {
-      error: error instanceof Error ? error.message : error,
-      calendarId,
-      eventData,
-    });
     return null;
   }
 }
@@ -425,30 +380,11 @@ export async function updateGoogleEvent(
   googleEventId: string,
   eventData: UpdateGoogleEventInput
 ): Promise<boolean> {
-  console.log("[Google Sync] updateGoogleEvent called with:", {
-    userId,
-    calendarId,
-    googleEventId,
-    eventData: {
-      title: eventData.title,
-      description: eventData.description,
-      startTime: eventData.startTime?.toISOString(),
-      endTime: eventData.endTime?.toISOString(),
-      isAllDay: eventData.isAllDay,
-    },
-  });
-
   const oauth2Client = await getGoogleOAuth2Client(userId);
 
   if (!oauth2Client) {
-    console.warn(
-      "[Google Sync] Cannot update event - no OAuth client for user:",
-      userId
-    );
     return false;
   }
-
-  console.log("[Google Sync] Got OAuth client, building event body...");
 
   const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
 
@@ -461,24 +397,14 @@ export async function updateGoogleEvent(
 
   if (eventData.title !== undefined) {
     eventBody.summary = eventData.title;
-    console.log("[Google Sync] Adding title to update:", eventData.title);
   }
 
   if (eventData.description !== undefined) {
     eventBody.description = eventData.description ?? undefined;
-    console.log(
-      "[Google Sync] Adding description to update:",
-      eventData.description
-    );
   }
 
   // Google API requires both start and end to be sent together when updating times
   // Only update times if both are provided
-  console.log("[Google Sync] Checking time update conditions:", {
-    hasStartTime: eventData.startTime !== undefined,
-    hasEndTime: eventData.endTime !== undefined,
-    isAllDay: eventData.isAllDay,
-  });
 
   if (eventData.startTime !== undefined && eventData.endTime !== undefined) {
     if (eventData.isAllDay) {
@@ -491,10 +417,6 @@ export async function updateGoogleEvent(
       eventBody.end = {
         date: endDate.toISOString().split("T")[0],
       };
-      console.log("[Google Sync] Adding all-day times:", {
-        start: eventBody.start,
-        end: eventBody.end,
-      });
     } else {
       eventBody.start = {
         dateTime: eventData.startTime.toISOString(),
@@ -502,51 +424,22 @@ export async function updateGoogleEvent(
       eventBody.end = {
         dateTime: eventData.endTime.toISOString(),
       };
-      console.log("[Google Sync] Adding dateTime times:", {
-        start: eventBody.start,
-        end: eventBody.end,
-      });
     }
-  } else {
-    console.log(
-      "[Google Sync] Skipping time update - missing start or end time"
-    );
   }
 
-  console.log(
-    "[Google Sync] Final eventBody to send:",
-    JSON.stringify(eventBody, null, 2)
-  );
-
   if (Object.keys(eventBody).length === 0) {
-    console.warn("[Google Sync] No fields to update, skipping API call");
     return true;
   }
 
   try {
-    console.log("[Google Sync] Calling Google Calendar API patch...");
-    const response = await calendarApi.events.patch({
+    await calendarApi.events.patch({
       calendarId,
       eventId: googleEventId,
       requestBody: eventBody,
     });
 
-    console.log("[Google Sync] Updated event successfully:", {
-      googleEventId,
-      updates: Object.keys(eventBody),
-      responseStatus: response.status,
-      responseEventId: response.data.id,
-    });
-
     return true;
   } catch (error) {
-    console.error("[Google Sync] Failed to update event:", {
-      error: error instanceof Error ? error.message : error,
-      errorName: error instanceof Error ? error.name : undefined,
-      calendarId,
-      googleEventId,
-      eventBody: JSON.stringify(eventBody),
-    });
     return false;
   }
 }
@@ -563,10 +456,6 @@ export async function deleteGoogleEvent(
   const oauth2Client = await getGoogleOAuth2Client(userId);
 
   if (!oauth2Client) {
-    console.warn(
-      "[Google Sync] Cannot delete event - no OAuth client for user:",
-      userId
-    );
     return false;
   }
 
@@ -578,15 +467,8 @@ export async function deleteGoogleEvent(
       eventId: googleEventId,
     });
 
-    console.log("[Google Sync] Deleted event:", { googleEventId });
-
     return true;
   } catch (error) {
-    console.error("[Google Sync] Failed to delete event:", {
-      error: error instanceof Error ? error.message : error,
-      calendarId,
-      googleEventId,
-    });
     return false;
   }
 }

@@ -17,11 +17,7 @@ export abstract class CalendarsService {
     try {
       await syncGoogleCalendars(userId);
     } catch (error) {
-      console.error("[Google Sync Error]", {
-        userId,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+      // Continue - fetch local calendars even if sync fails
     }
 
     const calendars = await db

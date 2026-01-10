@@ -220,10 +220,6 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
           }
         }
       } catch (error) {
-        console.error("[Google Sync Error] Failed to sync new event:", {
-          eventId: newEvent.id,
-          error: error instanceof Error ? error.message : error,
-        });
         // Continue - local event was created successfully
       }
 
@@ -334,16 +330,6 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
     }),
     needsApproval: true,
     execute: async (input) => {
-      console.log("[Agent Update] Tool called with input:", {
-        eventId: input.eventId,
-        title: input.title,
-        description: input.description,
-        startTime: input.startTime,
-        endTime: input.endTime,
-        isAllDay: input.isAllDay,
-        color: input.color,
-      });
-
       const [existingEvent] = await db
         .select()
         .from(event)
@@ -352,19 +338,8 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
         );
 
       if (!existingEvent) {
-        console.log("[Agent Update] Event not found:", input.eventId);
         return { success: false, error: "Event not found" };
       }
-
-      console.log("[Agent Update] Found existing event:", {
-        id: existingEvent.id,
-        title: existingEvent.title,
-        googleEventId: existingEvent.googleEventId,
-        googleCalendarId: existingEvent.googleCalendarId,
-        startTime: existingEvent.startTime.toISOString(),
-        endTime: existingEvent.endTime.toISOString(),
-        isAllDay: existingEvent.isAllDay,
-      });
 
       // Only update fields that have actual values (not empty strings)
       const updateData: Partial<typeof event.$inferInsert> = {};
@@ -387,16 +362,6 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
         updateData.color = input.color;
       }
 
-      console.log("[Agent Update] Built updateData:", {
-        title: updateData.title,
-        description: updateData.description,
-        startTime: updateData.startTime?.toISOString(),
-        endTime: updateData.endTime?.toISOString(),
-        isAllDay: updateData.isAllDay,
-        color: updateData.color,
-        fieldsToUpdate: Object.keys(updateData),
-      });
-
       const [updatedEvent] = await db
         .update(event)
         .set(updateData)
@@ -410,13 +375,6 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
       }
 
       // Sync to Google Calendar if event has a Google ID
-      console.log("[Agent Update] Checking Google sync conditions:", {
-        hasGoogleEventId: !!existingEvent.googleEventId,
-        hasGoogleCalendarId: !!existingEvent.googleCalendarId,
-        googleEventId: existingEvent.googleEventId,
-        googleCalendarId: existingEvent.googleCalendarId,
-      });
-
       if (existingEvent.googleEventId && existingEvent.googleCalendarId) {
         try {
           // Use existing event values as fallback for times (Google needs both start and end)
@@ -424,21 +382,7 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
           const startTime = updateData.startTime ?? existingEvent.startTime;
           const endTime = updateData.endTime ?? existingEvent.endTime;
 
-          console.log("[Agent Update] Syncing to Google Calendar:", {
-            userId: context.userId,
-            googleCalendarId: existingEvent.googleCalendarId,
-            googleEventId: existingEvent.googleEventId,
-            updateDataTitle: updateData.title,
-            updateDataDescription: updateData.description,
-            updateDataStartTime: updateData.startTime?.toISOString(),
-            updateDataEndTime: updateData.endTime?.toISOString(),
-            updateDataIsAllDay: updateData.isAllDay,
-            resolvedStartTime: startTime.toISOString(),
-            resolvedEndTime: endTime.toISOString(),
-            resolvedIsAllDay: isAllDay,
-          });
-
-          const syncResult = await updateGoogleEvent(
+          await updateGoogleEvent(
             context.userId,
             existingEvent.googleCalendarId,
             existingEvent.googleEventId,
@@ -450,19 +394,9 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
               isAllDay,
             }
           );
-
-          console.log("[Agent Update] Google sync result:", syncResult);
         } catch (error) {
-          console.error("[Google Sync Error] Failed to sync event update:", {
-            eventId: input.eventId,
-            googleEventId: existingEvent.googleEventId,
-            error: error instanceof Error ? error.message : error,
-            stack: error instanceof Error ? error.stack : undefined,
-          });
           // Continue - local event was updated successfully
         }
-      } else {
-        console.log("[Agent Update] Skipping Google sync - no Google IDs");
       }
 
       return {
@@ -517,11 +451,6 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
             existingEvent.googleEventId
           );
         } catch (error) {
-          console.error("[Google Sync Error] Failed to delete from Google:", {
-            eventId,
-            googleEventId: existingEvent.googleEventId,
-            error: error instanceof Error ? error.message : error,
-          });
           // Continue - still delete locally
         }
       }

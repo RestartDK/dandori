@@ -92,10 +92,6 @@ export abstract class ChatService {
             }
           }
         } catch (error) {
-          console.error("[Google Sync Error] Failed to sync new event:", {
-            eventId: newEvent.id,
-            error: error instanceof Error ? error.message : error,
-          });
           // Continue - local event was created successfully
         }
 
@@ -177,11 +173,6 @@ export abstract class ChatService {
               }
             );
           } catch (error) {
-            console.error("[Google Sync Error] Failed to sync event update:", {
-              eventId,
-              googleEventId: existingEvent.googleEventId,
-              error: error instanceof Error ? error.message : error,
-            });
             // Continue - local event was updated successfully
           }
         }
@@ -221,11 +212,6 @@ export abstract class ChatService {
               existingEvent.googleEventId
             );
           } catch (error) {
-            console.error("[Google Sync Error] Failed to delete from Google:", {
-              eventId,
-              googleEventId: existingEvent.googleEventId,
-              error: error instanceof Error ? error.message : error,
-            });
             // Continue - still delete locally
           }
         }

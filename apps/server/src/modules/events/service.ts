@@ -43,11 +43,7 @@ export abstract class EventsService {
     try {
       await syncGoogleCalendarEvents(userId, start, end);
     } catch (error) {
-      console.error("[Google Sync Error]", {
-        userId,
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+      // Continue - fetch local events even if sync fails
     }
 
     // Get visible calendar IDs for this user
@@ -135,10 +131,6 @@ export abstract class EventsService {
         }
       }
     } catch (error) {
-      console.error("[Google Sync Error] Failed to sync new event:", {
-        eventId: newEvent.id,
-        error: error instanceof Error ? error.message : error,
-      });
       // Continue - local event was created successfully
     }
 
@@ -191,11 +183,6 @@ export abstract class EventsService {
           }
         );
       } catch (error) {
-        console.error("[Google Sync Error] Failed to sync event update:", {
-          eventId,
-          googleEventId: existingEvent.googleEventId,
-          error: error instanceof Error ? error.message : error,
-        });
         // Continue - local event was updated successfully
       }
     }
@@ -227,14 +214,6 @@ export abstract class EventsService {
           existingEvent.googleEventId
         );
       } catch (error) {
-        console.error(
-          "[Google Sync Error] Failed to delete event from Google:",
-          {
-            eventId,
-            googleEventId: existingEvent.googleEventId,
-            error: error instanceof Error ? error.message : error,
-          }
-        );
         // Continue - still delete locally
       }
     }
