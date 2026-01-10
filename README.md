@@ -1,71 +1,192 @@
-# dandori-ai
+# Dandori
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Router, Elysia, and more.
+Dandori is an AI-powered calendar assistant that helps you manage your schedule through natural conversation, making calendar management effortless and intelligent.
+
+## The Problem
+
+Traditional calendar applications suffer from two fundamental limitations:
+
+### Reactive, Not Adaptive
+
+When unexpected changes happen—you're running late, a meeting goes long, or plans shift—conventional calendars can't absorb these disruptions and intelligently ripple them through the rest of your schedule. You're left manually rearranging everything yourself.
+
+### Passive, Not Proactive
+
+Standard calendars are merely display tools. They can't help you think through what an ideal arrangement looks like, whether you're planning your own week or coordinating with others. They wait for you to figure it out.
+
+## The Solution
+
+Dandori addresses these limitations with an AI-powered approach:
+
+### Conversational Calendar Management
+
+A natural language chat interface lets you manage your schedule through conversation. Simply tell the assistant what you need:
+
+- *"Schedule a meeting with Sarah tomorrow afternoon"*
+- *"When am I free this week?"*
+- *"Move my gym session to the evening and add prep time for my essay"*
+
+The AI understands context, checks for conflicts, and proposes changes—all through simple conversation.
+
+### Human-in-the-Loop Approval
+
+Before any changes are made to your calendar, you see a clear proposal card showing exactly what will be created, modified, or deleted. You stay in control while the AI handles the complexity.
+
+### Intelligent Scheduling
+
+The assistant can:
+
+- Find free time slots that match your requirements
+- Detect and warn about scheduling conflicts
+- Suggest appropriate times based on your existing schedule
+- Handle multi-step operations like finding availability and then scheduling
 
 ## Features
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Router** - File-based routing with full type safety
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **Elysia** - Type-safe, high-performance framework
-- **Bun** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Biome** - Linting and formatting
-- **Turborepo** - Optimized monorepo build system
+- **Calendar Views**: Day, week, month, and year views with smooth navigation
+- **Drag & Drop**: Reschedule events by dragging, resize by pulling edges
+- **AI Chat Panel**: Collapsible sidebar with streaming responses
+- **Proposal Cards**: Visual diff of proposed changes with accept/decline actions
+- **Google OAuth**: Sign in with Google for secure authentication
+- **Real-time Updates**: Changes reflect immediately across the interface
 
 ## Getting Started
 
-First, install the dependencies:
+### Prerequisites
+
+- [Bun](https://bun.sh/) v1.3.4 or later
+- PostgreSQL database
+- Google Cloud project with OAuth credentials
+- Google AI (Gemini) API key
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/your-username/dandori-ai.git
+cd dandori-ai
+```
+
+Install dependencies:
 
 ```bash
 bun install
 ```
 
-## Database Setup
+Set up environment variables:
 
-This project uses PostgreSQL with Drizzle ORM.
+**Server** (`apps/server/.env`):
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
-
-```bash
-bun run db:push
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/dandori
+BETTER_AUTH_SECRET=your-auth-secret
+BETTER_AUTH_URL=http://localhost:3000
+CORS_ORIGIN=http://localhost:3001
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_GENERATIVE_AI_API_KEY=your-gemini-api-key
 ```
 
-Then, run the development server:
+**Web** (`apps/web/.env`):
 
-```bash
-bun run dev
+```env
+VITE_SERVER_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+Start the database (if using Docker):
+
+```bash
+bun db:start
+```
+
+Run database migrations:
+
+```bash
+bun db:migrate
+```
+
+Start the development servers:
+
+```bash
+bun dev
+```
+
+The web application will be available at [http://localhost:3001](http://localhost:3001) and the API at [http://localhost:3000](http://localhost:3000).
+
+### Available Scripts
+
+| Command | Description |
+| ------- | ----------- |
+| `bun dev` | Start all applications in development mode |
+| `bun dev:web` | Start only the web application |
+| `bun dev:server` | Start only the server |
+| `bun build` | Build all applications |
+| `bun check-types` | Run TypeScript type checking |
+| `bun check` | Run Biome linting and formatting |
+| `bun db:start` | Start the PostgreSQL container |
+| `bun db:migrate` | Run database migrations |
+| `bun db:studio` | Open Drizzle Studio for database management |
 
 ## Project Structure
 
-```
+```text
 dandori-ai/
 ├── apps/
-│   ├── web/         # Frontend application (React + TanStack Router)
-│   └── server/      # Backend API (Elysia)
+│   ├── web/              # React frontend (TanStack Router, shadcn/ui)
+│   └── server/           # Elysia backend with AI agent
+│       └── modules/
+│           ├── chat/     # AI chat with calendar tools
+│           └── events/   # Calendar event CRUD
 ├── packages/
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+│   ├── auth/             # Better-Auth configuration
+│   ├── db/               # Drizzle ORM schema & migrations
+│   ├── env/              # Type-safe environment variables
+│   └── config/           # Shared TypeScript configuration
 ```
 
-## Available Scripts
+## Deployment
 
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run dev:server`: Start only the server
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run db:push`: Push schema changes to database
-- `bun run db:studio`: Open database studio UI
-- `bun run check`: Run Biome formatting and linting
+Dandori is deployed using **Dokploy**, a self-hosted platform for managing containerized applications.
+
+### Architecture
+
+The application is split into two separate Dokploy applications:
+
+1. **Web Application** - The React frontend, built and served as static files
+2. **Server Application** - The Elysia backend API with the AI agent
+
+### Build Process
+
+Both applications use **Railpack** for builds, which automatically detects the project structure and creates optimized Docker images.
+
+### Database
+
+PostgreSQL is hosted as a separate service on Dokploy, providing persistent storage for user data, authentication, and calendar events.
+
+### Environment Configuration
+
+Environment variables are configured directly in Dokploy for each application:
+
+- **Server**: Database connection, Google OAuth credentials, Gemini API key, CORS settings
+- **Web**: Server URL for API communication
+
+### Deployment Steps
+
+1. Connect your Git repository to Dokploy
+1. Create two applications: one for `apps/web`, one for `apps/server`
+1. Configure environment variables for each application
+1. Set up a PostgreSQL database service
+1. Deploy—Railpack handles the build process automatically
+
+The server runs migrations on startup via the `server#start` task, ensuring the database schema is always up to date.
+
+## Tech Stack
+
+- **Frontend**: React, TanStack Router, TailwindCSS, shadcn/ui
+- **Backend**: Elysia, Bun
+- **Database**: PostgreSQL, Drizzle ORM
+- **AI**: Google Gemini 2.5 Pro via Vercel AI SDK
+- **Auth**: Better-Auth with Google OAuth
+- **Build**: Turborepo, Railpack
+- **Deployment**: Dokploy
