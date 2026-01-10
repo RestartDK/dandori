@@ -1,45 +1,23 @@
 # Dandori
 
+<div align="center">
+  <img src="docs/demo.png" alt="Dandori Calendar Application Demo" />
+</div>
+
 Dandori is an AI-powered calendar assistant that helps you manage your schedule through natural conversation, making calendar management effortless and intelligent.
 
 ## The Problem
 
 Traditional calendar applications suffer from two fundamental limitations:
 
-### Reactive, Not Adaptive
-
-When unexpected changes happen—you're running late, a meeting goes long, or plans shift—conventional calendars can't absorb these disruptions and intelligently ripple them through the rest of your schedule. You're left manually rearranging everything yourself.
-
-### Passive, Not Proactive
-
-Standard calendars are merely display tools. They can't help you think through what an ideal arrangement looks like, whether you're planning your own week or coordinating with others. They wait for you to figure it out.
+1. **Reactive, Not Adaptive** -> When unexpected changes happen—you're running late, a meeting goes long, or plans shift—conventional calendars can't absorb these disruptions and intelligently ripple them through the rest of your schedule. You're left manually rearranging everything yourself.
+2. **Passive, Not Proactive** -> Standard calendars are merely display tools. They can't help you think through what an ideal arrangement looks like, whether you're planning your own week or coordinating with others. They wait for you to figure it out.
 
 ## The Solution
 
-Dandori addresses these limitations with an AI-powered approach:
-
-### Conversational Calendar Management
-
-A natural language chat interface lets you manage your schedule through conversation. Simply tell the assistant what you need:
-
-- *"Schedule a meeting with Sarah tomorrow afternoon"*
-- *"When am I free this week?"*
-- *"Move my gym session to the evening and add prep time for my essay"*
-
-The AI understands context, checks for conflicts, and proposes changes—all through simple conversation.
-
-### Human-in-the-Loop Approval
-
-Before any changes are made to your calendar, you see a clear proposal card showing exactly what will be created, modified, or deleted. You stay in control while the AI handles the complexity.
-
-### Intelligent Scheduling
-
-The assistant can:
-
-- Find free time slots that match your requirements
-- Detect and warn about scheduling conflicts
-- Suggest appropriate times based on your existing schedule
-- Handle multi-step operations like finding availability and then scheduling
+- **Conversational calendar management** -> Tell the assistant what you want in plain language and it turns intent into proposed calendar updates.
+- **Human-in-the-loop approval** -> Review an explicit diff of changes and approve/decline so you stay in control.
+- **Intelligent scheduling** -> Finds availability, detects conflicts, and suggests times that fit your existing calendar.
 
 ## Features
 
