@@ -3,6 +3,8 @@ import {
   ChevronRight,
   PanelLeft,
   PanelLeftClose,
+  PanelRight,
+  PanelRightClose,
   Plus,
 } from "lucide-react";
 
@@ -14,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import UserMenu from "@/components/user-menu";
 
 import type { CalendarView } from "./calendar";
 
@@ -123,6 +126,8 @@ export function CalendarHeader({
       </div>
 
       <div className="flex items-center gap-3">
+        <UserMenu />
+
         <Select
           onValueChange={(value) => onViewChange(value as CalendarView)}
           value={currentView}
@@ -151,7 +156,11 @@ export function CalendarHeader({
           size="icon"
           variant="ghost"
         >
-          <PanelLeft className={isChatOpen ? "-scale-x-100" : ""} />
+          {isChatOpen ? (
+            <PanelRightClose className="size-4" />
+          ) : (
+            <PanelRight className="size-4" />
+          )}
         </Button>
       </div>
     </div>

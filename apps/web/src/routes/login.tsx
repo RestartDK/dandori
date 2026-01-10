@@ -12,7 +12,7 @@ function RouteComponent() {
   const [showSignIn, setShowSignIn] = useState(true);
 
   return (
-    <div className="flex min-h-[calc(100vh-49px)] items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center p-4">
       {showSignIn ? (
         <SignInForm
           className="w-full max-w-md"

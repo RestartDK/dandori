@@ -233,10 +233,10 @@ export function EventBlock({
         onPointerDown={(e) => handleResizeStart(e, "top")}
       />
 
-      <div className="pointer-events-none">
-        <div className="truncate font-medium">{event.title}</div>
+      <div className="pointer-events-none min-w-0 overflow-hidden">
+        <div className="break-words font-medium">{event.title}</div>
         {!(event.isAllDay || isContinuation) && (
-          <div className="opacity-80">
+          <div className="truncate opacity-80">
             {new Date(event.startTime).toLocaleTimeString("en-US", {
               hour: "numeric",
               minute: "2-digit",
@@ -257,7 +257,7 @@ export function EventBlock({
       {isDragging && (
         <div
           className={cn(
-            "pointer-events-none absolute flex flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs",
+            "pointer-events-none absolute flex min-w-0 flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs",
             !layoutStyle && "right-1 left-1",
             className
           )}
@@ -269,10 +269,10 @@ export function EventBlock({
             ...style,
           }}
         >
-          <div className="pointer-events-none">
-            <div className="truncate font-medium">{event.title}</div>
+          <div className="pointer-events-none min-w-0 overflow-hidden">
+            <div className="break-words font-medium">{event.title}</div>
             {!(event.isAllDay || isContinuation) && (
-              <div className="opacity-80">
+              <div className="truncate opacity-80">
                 {new Date(event.startTime).toLocaleTimeString("en-US", {
                   hour: "numeric",
                   minute: "2-digit",
@@ -285,7 +285,7 @@ export function EventBlock({
 
       <motion.button
         className={cn(
-          "absolute flex cursor-grab flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs",
+          "absolute flex min-w-0 cursor-grab flex-col items-start overflow-hidden rounded-md px-2 py-1 text-left text-xs",
           isDragging && "cursor-grabbing",
           !layoutStyle && "right-1 left-1",
           className

@@ -23,7 +23,7 @@ function DashboardComponent() {
 
   return (
     <PendingChangesProvider>
-      <div className="flex h-[calc(100vh-49px)]">
+      <div className="flex h-screen">
         <CalendarSidebar isOpen={isSidebarOpen} />
         <div className="flex-1 overflow-hidden">
           <Calendar

@@ -167,9 +167,9 @@ export function MonthView({
                     type="button"
                   >
                     {event.isAllDay ? (
-                      event.title
+                      <span className="truncate">{event.title}</span>
                     ) : (
-                      <>
+                      <span className="truncate">
                         <span className="font-medium">
                           {new Date(event.startTime).toLocaleTimeString(
                             "en-US",
@@ -177,7 +177,7 @@ export function MonthView({
                           )}
                         </span>{" "}
                         {event.title}
-                      </>
+                      </span>
                     )}
                   </button>
                 ))}

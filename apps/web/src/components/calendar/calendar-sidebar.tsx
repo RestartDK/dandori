@@ -18,7 +18,7 @@ export function CalendarSidebar({ isOpen }: CalendarSidebarProps) {
 
   return (
     <aside className="w-64 shrink-0 border-r bg-muted/30">
-      <div className="flex items-center gap-2 border-b px-4 py-3">
+      <div className="flex items-center gap-2 border-b px-4 py-4.5">
         <Calendar className="size-4 text-muted-foreground" />
         <h2 className="font-medium text-sm">My Calendars</h2>
       </div>
