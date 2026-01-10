@@ -9,10 +9,8 @@ export type CalendarEvent = NonNullable<EventsResponse>[number];
 type CreateEventBody = Parameters<typeof api.api.events.post>[0];
 export type CreateEventInput = CreateEventBody;
 
-type UpdateEventBody = Parameters<
-  ReturnType<typeof api.api.events>["patch"]
->[0];
-export type UpdateEventInput = UpdateEventBody;
+// UpdateEventInput uses Partial of CreateEventInput since the server expects the same fields but optional
+export type UpdateEventInput = Partial<CreateEventInput>;
 
 export function useEvents(start: Date, end: Date) {
   const queryClient = useQueryClient();
