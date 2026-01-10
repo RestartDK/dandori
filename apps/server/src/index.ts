@@ -27,8 +27,6 @@ const app = new Elysia()
   .use(calendars)
   .use(events)
   .use(chat)
-  .listen(env.PORT, () => {
-    console.log(`Server is running on http://localhost:${env.PORT}`);
-  });
+  .listen(env.PORT);
 
 export type App = typeof app;

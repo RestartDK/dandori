@@ -28,17 +28,14 @@ async function getGoogleOAuth2Client(userId: string) {
     .where(and(eq(account.userId, userId), eq(account.providerId, "google")));
 
   if (!googleAccount) {
-    console.warn("[Google Sync] No Google account linked for user:", userId);
     return null;
   }
 
   if (!googleAccount.accessToken) {
-    console.warn("[Google Sync] No access token for user:", userId);
     return null;
   }
 
   if (!googleAccount.refreshToken) {
-    console.warn("[Google Sync] No refresh token for user:", userId);
     return null;
   }
 
@@ -55,7 +52,6 @@ async function getGoogleOAuth2Client(userId: string) {
 
   // Handle token refresh - update stored tokens when refreshed
   oauth2Client.on("tokens", async (tokens) => {
-    console.log("[Google Sync] Token refreshed for user:", userId);
     await db
       .update(account)
       .set({
@@ -80,17 +76,9 @@ export async function syncGoogleCalendars(userId: string): Promise<void> {
     return;
   }
 
-  console.log("[Google Sync] Syncing calendars for user:", userId);
-
   const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
   const response = await calendarApi.calendarList.list();
   const googleCalendars = response.data.items ?? [];
-
-  console.log(
-    "[Google Sync] Fetched",
-    googleCalendars.length,
-    "calendars from Google"
-  );
 
   for (const gCal of googleCalendars) {
     if (!gCal.id) {
@@ -155,15 +143,8 @@ export async function syncGoogleCalendarEvents(
     .where(and(eq(calendar.userId, userId), eq(calendar.isVisible, true)));
 
   if (visibleCalendars.length === 0) {
-    console.log("[Google Sync] No visible calendars for user:", userId);
     return;
   }
-
-  console.log("[Google Sync] Starting sync for user:", userId, {
-    timeMin: timeMin.toISOString(),
-    timeMax: timeMax.toISOString(),
-    calendars: visibleCalendars.length,
-  });
 
   const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
 
@@ -178,18 +159,6 @@ export async function syncGoogleCalendarEvents(
     });
 
     const googleEvents = response.data.items ?? [];
-    console.log("[Google Sync] Calendar:", cal.name, {
-      googleCalendarId: cal.googleCalendarId,
-      color: cal.color,
-      eventCount: googleEvents.length,
-      events: googleEvents.map((e) => ({
-        id: e.id,
-        title: e.summary,
-        start: e.start?.dateTime ?? e.start?.date,
-        end: e.end?.dateTime ?? e.end?.date,
-        isAllDay: !e.start?.dateTime,
-      })),
-    });
 
     for (const gEvent of googleEvents) {
       if (!(gEvent.id && gEvent.start)) {
@@ -310,4 +279,196 @@ export async function hasGoogleAccount(userId: string): Promise<boolean> {
     .where(and(eq(account.userId, userId), eq(account.providerId, "google")));
 
   return !!googleAccount;
+}
+
+/**
+ * Gets the primary calendar ID for a user
+ */
+export async function getDefaultCalendarId(
+  userId: string
+): Promise<string | null> {
+  // First check if we have a primary calendar in the DB
+  const [primaryCalendar] = await db
+    .select({ googleCalendarId: calendar.googleCalendarId })
+    .from(calendar)
+    .where(and(eq(calendar.userId, userId), eq(calendar.isPrimary, true)));
+
+  if (primaryCalendar) {
+    return primaryCalendar.googleCalendarId;
+  }
+
+  // Fallback: use "primary" which is a special Google Calendar ID
+  return "primary";
+}
+
+interface CreateGoogleEventInput {
+  title: string;
+  description?: string | null;
+  startTime: Date;
+  endTime: Date;
+  isAllDay?: boolean;
+}
+
+/**
+ * Creates an event in Google Calendar
+ * Returns the Google Event ID if successful, null otherwise
+ */
+export async function createGoogleEvent(
+  userId: string,
+  calendarId: string,
+  eventData: CreateGoogleEventInput
+): Promise<string | null> {
+  const oauth2Client = await getGoogleOAuth2Client(userId);
+
+  if (!oauth2Client) {
+    return null;
+  }
+
+  const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
+
+  const eventBody: {
+    summary: string;
+    description?: string;
+    start: { dateTime?: string; date?: string; timeZone?: string };
+    end: { dateTime?: string; date?: string; timeZone?: string };
+  } = {
+    summary: eventData.title,
+    description: eventData.description ?? undefined,
+    start: {},
+    end: {},
+  };
+
+  if (eventData.isAllDay) {
+    // All-day events use date strings (YYYY-MM-DD)
+    eventBody.start.date = eventData.startTime.toISOString().split("T")[0];
+    // Google all-day events use exclusive end date (add 1 day)
+    const endDate = new Date(eventData.endTime);
+    endDate.setDate(endDate.getDate() + 1);
+    eventBody.end.date = endDate.toISOString().split("T")[0];
+  } else {
+    eventBody.start.dateTime = eventData.startTime.toISOString();
+    eventBody.end.dateTime = eventData.endTime.toISOString();
+  }
+
+  try {
+    const response = await calendarApi.events.insert({
+      calendarId,
+      requestBody: eventBody,
+    });
+
+    return response.data.id ?? null;
+  } catch (error) {
+    return null;
+  }
+}
+
+interface UpdateGoogleEventInput {
+  title?: string;
+  description?: string | null;
+  startTime?: Date;
+  endTime?: Date;
+  isAllDay?: boolean;
+}
+
+/**
+ * Updates an event in Google Calendar
+ * Returns true if successful, false otherwise
+ */
+export async function updateGoogleEvent(
+  userId: string,
+  calendarId: string,
+  googleEventId: string,
+  eventData: UpdateGoogleEventInput
+): Promise<boolean> {
+  const oauth2Client = await getGoogleOAuth2Client(userId);
+
+  if (!oauth2Client) {
+    return false;
+  }
+
+  const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
+
+  const eventBody: {
+    summary?: string;
+    description?: string;
+    start?: { dateTime?: string; date?: string; timeZone?: string };
+    end?: { dateTime?: string; date?: string; timeZone?: string };
+  } = {};
+
+  if (eventData.title !== undefined) {
+    eventBody.summary = eventData.title;
+  }
+
+  if (eventData.description !== undefined) {
+    eventBody.description = eventData.description ?? undefined;
+  }
+
+  // Google API requires both start and end to be sent together when updating times
+  // Only update times if both are provided
+
+  if (eventData.startTime !== undefined && eventData.endTime !== undefined) {
+    if (eventData.isAllDay) {
+      eventBody.start = {
+        date: eventData.startTime.toISOString().split("T")[0],
+      };
+      // Google all-day events use exclusive end date (add 1 day)
+      const endDate = new Date(eventData.endTime);
+      endDate.setDate(endDate.getDate() + 1);
+      eventBody.end = {
+        date: endDate.toISOString().split("T")[0],
+      };
+    } else {
+      eventBody.start = {
+        dateTime: eventData.startTime.toISOString(),
+      };
+      eventBody.end = {
+        dateTime: eventData.endTime.toISOString(),
+      };
+    }
+  }
+
+  if (Object.keys(eventBody).length === 0) {
+    return true;
+  }
+
+  try {
+    await calendarApi.events.patch({
+      calendarId,
+      eventId: googleEventId,
+      requestBody: eventBody,
+    });
+
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Deletes an event from Google Calendar
+ * Returns true if successful, false otherwise
+ */
+export async function deleteGoogleEvent(
+  userId: string,
+  calendarId: string,
+  googleEventId: string
+): Promise<boolean> {
+  const oauth2Client = await getGoogleOAuth2Client(userId);
+
+  if (!oauth2Client) {
+    return false;
+  }
+
+  const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
+
+  try {
+    await calendarApi.events.delete({
+      calendarId,
+      eventId: googleEventId,
+    });
+
+    return true;
+  } catch (error) {
+    return false;
+  }
 }

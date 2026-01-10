@@ -2,6 +2,13 @@ import { db } from "@dandori-ai/db";
 import { event } from "@dandori-ai/db/schema";
 import { and, eq } from "drizzle-orm";
 
+import {
+  createGoogleEvent,
+  deleteGoogleEvent,
+  getDefaultCalendarId,
+  updateGoogleEvent,
+} from "@/google-calendar";
+
 interface EventResponse {
   id: string;
   title: string;
@@ -23,6 +30,7 @@ type ExecuteResult =
 export abstract class ChatService {
   /**
    * Execute a tool call approved by the user
+   * Syncs changes with Google Calendar
    */
   static async executeToolCall(
     userId: string,
@@ -31,16 +39,23 @@ export abstract class ChatService {
   ): Promise<ExecuteResult> {
     switch (toolName) {
       case "createEvent": {
+        const title = args.title as string;
+        const description = (args.description as string | undefined) ?? null;
+        const startTime = new Date(args.startTime as string);
+        const endTime = new Date(args.endTime as string);
+        const isAllDay = (args.isAllDay as boolean | undefined) ?? false;
+        const color = (args.color as string | undefined) ?? "#3b82f6";
+
         const [newEvent] = await db
           .insert(event)
           .values({
             userId,
-            title: args.title as string,
-            description: (args.description as string | undefined) ?? null,
-            startTime: new Date(args.startTime as string),
-            endTime: new Date(args.endTime as string),
-            isAllDay: (args.isAllDay as boolean | undefined) ?? false,
-            color: (args.color as string | undefined) ?? "#3b82f6",
+            title,
+            description,
+            startTime,
+            endTime,
+            isAllDay,
+            color,
           })
           .returning();
 
@@ -48,16 +63,48 @@ export abstract class ChatService {
           return { success: false, message: "Failed to create event" };
         }
 
+        // Sync to Google Calendar
+        let finalEvent = newEvent;
+        try {
+          const calendarId = await getDefaultCalendarId(userId);
+          if (calendarId) {
+            const googleEventId = await createGoogleEvent(userId, calendarId, {
+              title,
+              description,
+              startTime,
+              endTime,
+              isAllDay,
+            });
+
+            if (googleEventId) {
+              const [updatedEvent] = await db
+                .update(event)
+                .set({
+                  googleEventId,
+                  googleCalendarId: calendarId,
+                })
+                .where(eq(event.id, newEvent.id))
+                .returning();
+
+              if (updatedEvent) {
+                finalEvent = updatedEvent;
+              }
+            }
+          }
+        } catch (error) {
+          // Continue - local event was created successfully
+        }
+
         return {
           success: true,
           event: {
-            id: newEvent.id,
-            title: newEvent.title,
-            description: newEvent.description,
-            startTime: newEvent.startTime.toISOString(),
-            endTime: newEvent.endTime.toISOString(),
-            isAllDay: newEvent.isAllDay,
-            color: newEvent.color,
+            id: finalEvent.id,
+            title: finalEvent.title,
+            description: finalEvent.description,
+            startTime: finalEvent.startTime.toISOString(),
+            endTime: finalEvent.endTime.toISOString(),
+            isAllDay: finalEvent.isAllDay,
+            color: finalEvent.color,
           },
         };
       }
@@ -74,13 +121,13 @@ export abstract class ChatService {
           return { success: false, message: "Event not found", notFound: true };
         }
 
-        const updates: Record<string, unknown> = {};
+        const updates: Partial<typeof event.$inferInsert> = {};
         // Only update fields that have actual values (not empty strings)
         if (args.title !== undefined && args.title !== "") {
-          updates.title = args.title;
+          updates.title = args.title as string;
         }
         if (args.description !== undefined) {
-          updates.description = args.description;
+          updates.description = args.description as string | null;
         }
         if (args.startTime !== undefined && args.startTime !== "") {
           updates.startTime = new Date(args.startTime as string);
@@ -89,10 +136,10 @@ export abstract class ChatService {
           updates.endTime = new Date(args.endTime as string);
         }
         if (args.isAllDay !== undefined) {
-          updates.isAllDay = args.isAllDay;
+          updates.isAllDay = args.isAllDay as boolean;
         }
         if (args.color !== undefined && args.color !== "") {
-          updates.color = args.color;
+          updates.color = args.color as string;
         }
 
         const [updatedEvent] = await db
@@ -103,6 +150,31 @@ export abstract class ChatService {
 
         if (!updatedEvent) {
           return { success: false, message: "Failed to update event" };
+        }
+
+        // Sync to Google Calendar if event has a Google ID
+        if (existingEvent.googleEventId && existingEvent.googleCalendarId) {
+          try {
+            // Use existing event values as fallback for times (Google needs both start and end)
+            const isAllDay = updates.isAllDay ?? existingEvent.isAllDay;
+            const startTime = updates.startTime ?? existingEvent.startTime;
+            const endTime = updates.endTime ?? existingEvent.endTime;
+
+            await updateGoogleEvent(
+              userId,
+              existingEvent.googleCalendarId,
+              existingEvent.googleEventId,
+              {
+                title: updates.title,
+                description: updates.description,
+                startTime,
+                endTime,
+                isAllDay,
+              }
+            );
+          } catch (error) {
+            // Continue - local event was updated successfully
+          }
         }
 
         return {
@@ -129,6 +201,19 @@ export abstract class ChatService {
 
         if (!existingEvent) {
           return { success: false, message: "Event not found", notFound: true };
+        }
+
+        // Delete from Google Calendar first if event has a Google ID
+        if (existingEvent.googleEventId && existingEvent.googleCalendarId) {
+          try {
+            await deleteGoogleEvent(
+              userId,
+              existingEvent.googleCalendarId,
+              existingEvent.googleEventId
+            );
+          } catch (error) {
+            // Continue - still delete locally
+          }
         }
 
         await db

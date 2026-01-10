@@ -12,8 +12,31 @@ import {
   createCalendarTools,
 } from "./tools";
 
+function getTimezoneOffset(timezone: string): string {
+  // Get the current offset for the user's timezone in the format +HH:MM or -HH:MM
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    timeZoneName: "shortOffset",
+  });
+  const parts = formatter.formatToParts(now);
+  const offsetPart = parts.find((p) => p.type === "timeZoneName");
+  // offsetPart.value is like "GMT-8" or "GMT+5:30"
+  const offsetStr = offsetPart?.value ?? "GMT+0";
+  // Convert "GMT-8" to "-08:00", "GMT+5:30" to "+05:30"
+  const match = offsetStr.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  if (match) {
+    const sign = match[1];
+    const hours = match[2]?.padStart(2, "0") ?? "00";
+    const minutes = match[3] ?? "00";
+    return `${sign}${hours}:${minutes}`;
+  }
+  return "+00:00";
+}
+
 function buildSystemPrompt(context: AgentContext): string {
   const now = new Date();
+  const timezoneOffset = getTimezoneOffset(context.userTimezone);
 
   return `You are a helpful AI calendar assistant for Dandori, a smart calendar application. Your role is to help users manage their schedule efficiently.
 
@@ -30,7 +53,7 @@ function buildSystemPrompt(context: AgentContext): string {
     minute: "2-digit",
     timeZone: context.userTimezone,
   })}
-- User's timezone: ${context.userTimezone}
+- User's timezone: ${context.userTimezone} (offset: ${timezoneOffset})
 
 ## Your Capabilities
 - Create, update, and delete calendar events
@@ -59,9 +82,10 @@ For complex requests like "find a free hour tomorrow and schedule a meeting":
 3. Finally, propose creating an event in an appropriate slot
 
 ### Time Handling
-- The user's dates are in their local timezone
-- When creating events, use ISO 8601 format for startTime and endTime
-- For "tomorrow", calculate based on the current date
+- The user's dates are in their local timezone (${context.userTimezone}, offset: ${timezoneOffset})
+- When creating/updating events, ALWAYS use ISO 8601 format with the timezone offset ${timezoneOffset} (e.g., 2026-01-07T09:00:00${timezoneOffset})
+- NEVER use "Z" suffix (UTC) - always use the offset ${timezoneOffset}
+- For "tomorrow", calculate based on the current date in the user's timezone
 - Default event duration is 1 hour if not specified
 
 ### Event Colors
@@ -74,9 +98,7 @@ Available colors for events:
 - #ec4899 (pink) - social
 - #06b6d4 (cyan) - focus time
 
-Remember: You're here to make scheduling effortless. Be helpful, proactive, and respectful of the user's time.
-
-When creating events, always use ISO 8601 format with the user's timezone offset. For example, if the user is in ${context.userTimezone} and wants an event at 9am, calculate the correct UTC time based on their timezone.`;
+Remember: You're here to make scheduling effortless. Be helpful, proactive, and respectful of the user's time.`;
 }
 
 export interface CalendarAgentOptions {

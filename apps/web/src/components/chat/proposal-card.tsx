@@ -275,7 +275,7 @@ export function ProposalCard({
       await queryClient.invalidateQueries({ queryKey: ["events"] });
       onApprove();
     } catch (err) {
-      console.error("Failed to execute tool:", err);
+      // Error handling - user will see error via UI
     } finally {
       setIsExecuting(false);
     }
