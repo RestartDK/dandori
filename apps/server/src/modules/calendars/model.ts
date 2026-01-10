@@ -1,9 +1,9 @@
 import { calendar } from "@dandori-ai/db/schema";
-import { createSelectSchema } from "drizzle-typebox";
-import { t } from "elysia";
+import { createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 
 export const CalendarSchema = createSelectSchema(calendar);
 
-export const UpdateVisibilityBody = t.Object({
-  isVisible: t.Boolean(),
+export const UpdateVisibilityBody = z.object({
+  isVisible: z.boolean(),
 });

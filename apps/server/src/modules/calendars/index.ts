@@ -1,4 +1,5 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
+import { z } from "zod";
 
 import { getSessionUser } from "@/lib/auth";
 import { CalendarSchema, UpdateVisibilityBody } from "./model";
@@ -19,8 +20,8 @@ export const calendars = new Elysia({ prefix: "/api/calendars" })
     },
     {
       response: {
-        200: t.Array(CalendarSchema),
-        401: t.Object({ message: t.String() }),
+        200: z.array(CalendarSchema),
+        401: z.object({ message: z.string() }),
       },
     }
   )
@@ -52,13 +53,13 @@ export const calendars = new Elysia({ prefix: "/api/calendars" })
       return result.calendar;
     },
     {
-      params: t.Object({ id: t.String() }),
+      params: z.object({ id: z.string() }),
       body: UpdateVisibilityBody,
       response: {
         200: CalendarSchema,
-        401: t.Object({ message: t.String() }),
-        404: t.Object({ message: t.String() }),
-        500: t.Object({ message: t.String() }),
+        401: z.object({ message: z.string() }),
+        404: z.object({ message: z.string() }),
+        500: z.object({ message: z.string() }),
       },
     }
   );

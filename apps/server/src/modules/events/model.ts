@@ -1,45 +1,32 @@
 import { event } from "@dandori-ai/db/schema";
-import {
-  createInsertSchema,
-  createSelectSchema,
-  createUpdateSchema,
-} from "drizzle-typebox";
-import { t } from "elysia";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 
 export const EventSchema = createSelectSchema(event);
 
-// Transform ISO date strings from JSON to Date objects
-export const DateFromString = t
-  .Transform(t.String({ format: "date-time" }))
-  .Decode((value) => new Date(value))
-  .Encode((value) => value.toISOString());
-
-// Create schemas with date field overrides (to handle JSON string → Date conversion)
-const _InsertEventSchema = createInsertSchema(event, {
-  startTime: DateFromString,
-  endTime: DateFromString,
+// Create schemas with date coercion for JSON input
+const InsertEventSchema = createInsertSchema(event, {
+  startTime: z.coerce.date(),
+  endTime: z.coerce.date(),
 });
 
-const _UpdateEventSchema = createUpdateSchema(event, {
-  startTime: DateFromString,
-  endTime: DateFromString,
+const UpdateEventSchema = InsertEventSchema.partial();
+
+// Omit server-managed fields
+export const CreateEventBody = InsertEventSchema.omit({
+  id: true,
+  userId: true,
+  googleEventId: true,
+  googleCalendarId: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
-// Omit server-managed fields from body schemas
-export const CreateEventBody = t.Omit(_InsertEventSchema, [
-  "id",
-  "userId",
-  "googleEventId",
-  "googleCalendarId",
-  "createdAt",
-  "updatedAt",
-]);
-
-export const UpdateEventBody = t.Omit(_UpdateEventSchema, [
-  "id",
-  "userId",
-  "googleEventId",
-  "googleCalendarId",
-  "createdAt",
-  "updatedAt",
-]);
+export const UpdateEventBody = UpdateEventSchema.omit({
+  id: true,
+  userId: true,
+  googleEventId: true,
+  googleCalendarId: true,
+  createdAt: true,
+  updatedAt: true,
+});
