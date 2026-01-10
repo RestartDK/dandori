@@ -2,7 +2,13 @@ import { db } from "@dandori-ai/db";
 import { calendar, event } from "@dandori-ai/db/schema";
 import { and, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
 
-import { syncGoogleCalendarEvents } from "@/google-calendar";
+import {
+  createGoogleEvent,
+  deleteGoogleEvent,
+  getDefaultCalendarId,
+  syncGoogleCalendarEvents,
+  updateGoogleEvent,
+} from "@/google-calendar";
 
 interface CreateEventInput {
   userId: string;
@@ -78,6 +84,7 @@ export abstract class EventsService {
 
   /**
    * Create a new event
+   * Creates locally first, then syncs to Google Calendar
    */
   static async create(input: CreateEventInput) {
     const [newEvent] = await db
@@ -93,11 +100,54 @@ export abstract class EventsService {
       })
       .returning();
 
-    return newEvent ?? null;
+    if (!newEvent) {
+      return null;
+    }
+
+    // Sync to Google Calendar
+    try {
+      const calendarId = await getDefaultCalendarId(input.userId);
+      if (calendarId) {
+        const googleEventId = await createGoogleEvent(
+          input.userId,
+          calendarId,
+          {
+            title: input.title,
+            description: input.description,
+            startTime: input.startTime,
+            endTime: input.endTime,
+            isAllDay: input.isAllDay,
+          }
+        );
+
+        if (googleEventId) {
+          // Update local event with Google IDs
+          const [updatedEvent] = await db
+            .update(event)
+            .set({
+              googleEventId,
+              googleCalendarId: calendarId,
+            })
+            .where(eq(event.id, newEvent.id))
+            .returning();
+
+          return updatedEvent ?? newEvent;
+        }
+      }
+    } catch (error) {
+      console.error("[Google Sync Error] Failed to sync new event:", {
+        eventId: newEvent.id,
+        error: error instanceof Error ? error.message : error,
+      });
+      // Continue - local event was created successfully
+    }
+
+    return newEvent;
   }
 
   /**
    * Update an existing event
+   * Updates locally first, then syncs to Google Calendar
    */
   static async update(
     userId: string,
@@ -120,11 +170,42 @@ export abstract class EventsService {
       .where(and(eq(event.id, eventId), eq(event.userId, userId)))
       .returning();
 
+    // Sync to Google Calendar if event has a Google ID
+    if (existingEvent.googleEventId && existingEvent.googleCalendarId) {
+      try {
+        // Use existing event values as fallback for times (Google needs both start and end)
+        const isAllDay = input.isAllDay ?? existingEvent.isAllDay;
+        const startTime = input.startTime ?? existingEvent.startTime;
+        const endTime = input.endTime ?? existingEvent.endTime;
+
+        await updateGoogleEvent(
+          userId,
+          existingEvent.googleCalendarId,
+          existingEvent.googleEventId,
+          {
+            title: input.title,
+            description: input.description,
+            startTime,
+            endTime,
+            isAllDay,
+          }
+        );
+      } catch (error) {
+        console.error("[Google Sync Error] Failed to sync event update:", {
+          eventId,
+          googleEventId: existingEvent.googleEventId,
+          error: error instanceof Error ? error.message : error,
+        });
+        // Continue - local event was updated successfully
+      }
+    }
+
     return { found: true, event: updatedEvent ?? null };
   }
 
   /**
    * Delete an event
+   * Deletes from Google Calendar first, then locally
    */
   static async delete(userId: string, eventId: string) {
     // Check if event exists and belongs to user
@@ -135,6 +216,27 @@ export abstract class EventsService {
 
     if (!existingEvent) {
       return { found: false };
+    }
+
+    // Delete from Google Calendar first if event has a Google ID
+    if (existingEvent.googleEventId && existingEvent.googleCalendarId) {
+      try {
+        await deleteGoogleEvent(
+          userId,
+          existingEvent.googleCalendarId,
+          existingEvent.googleEventId
+        );
+      } catch (error) {
+        console.error(
+          "[Google Sync Error] Failed to delete event from Google:",
+          {
+            eventId,
+            googleEventId: existingEvent.googleEventId,
+            error: error instanceof Error ? error.message : error,
+          }
+        );
+        // Continue - still delete locally
+      }
     }
 
     await db
