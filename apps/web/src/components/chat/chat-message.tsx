@@ -2,6 +2,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { UIMessage } from "ai";
 import { Bot, User } from "lucide-react";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import type { CalendarEvent } from "@/hooks/use-events";
 import { cn } from "@/lib/utils";
@@ -90,11 +92,17 @@ export function ChatMessage({ message }: ChatMessageProps) {
                   "rounded-lg px-3 py-2 text-sm",
                   isUser
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                    : "prose prose-sm dark:prose-invert prose-headings:my-2 prose-li:my-0.5 prose-ol:my-1 prose-p:my-1 prose-pre:my-2 prose-ul:my-1 max-w-none prose-code:rounded bg-muted prose-code:bg-background/50 prose-code:px-1 prose-code:py-0.5 text-foreground prose-code:before:content-none prose-code:after:content-none"
                 )}
                 key={key}
               >
-                <p className="whitespace-pre-wrap">{part.text}</p>
+                {isUser ? (
+                  <p className="whitespace-pre-wrap">{part.text}</p>
+                ) : (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {part.text}
+                  </ReactMarkdown>
+                )}
               </div>
             );
           }

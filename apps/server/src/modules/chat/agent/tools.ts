@@ -2,7 +2,7 @@ import { db } from "@dandori-ai/db";
 import { event } from "@dandori-ai/db/schema";
 import type { ToolSet } from "ai";
 import { tool } from "ai";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gt, gte, lt, lte } from "drizzle-orm";
 import { z } from "zod";
 
 export interface AgentContext {
@@ -10,6 +10,48 @@ export interface AgentContext {
   userName: string;
   userEmail: string;
   userTimezone: string;
+}
+
+function isDateOnly(input: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(input);
+}
+
+function parseDateInput(input: string): Date {
+  // Important: `new Date("YYYY-MM-DD")` parses as UTC midnight. For date-only inputs
+  // we want local midnight so that "today" works as expected on the server.
+  if (isDateOnly(input)) {
+    return new Date(`${input}T00:00:00`);
+  }
+  return new Date(input);
+}
+
+function normalizeDateRange(
+  startInput: string,
+  endInput: string
+): { rangeStart: Date; rangeEndExclusive: Date } {
+  const rangeStart = parseDateInput(startInput);
+  const rawEnd = parseDateInput(endInput);
+
+  if (Number.isNaN(rangeStart.getTime())) {
+    throw new Error(`Invalid startDate: ${startInput}`);
+  }
+  if (Number.isNaN(rawEnd.getTime())) {
+    throw new Error(`Invalid endDate: ${endInput}`);
+  }
+
+  // Treat date-only end as inclusive-day input, convert to exclusive upper bound.
+  const rangeEndExclusive = new Date(rawEnd);
+  if (isDateOnly(endInput)) {
+    rangeEndExclusive.setDate(rangeEndExclusive.getDate() + 1);
+  }
+
+  // If the range is empty (e.g. start === end), assume caller meant "that day".
+  if (rangeEndExclusive.getTime() <= rangeStart.getTime()) {
+    rangeEndExclusive.setTime(rangeStart.getTime());
+    rangeEndExclusive.setDate(rangeEndExclusive.getDate() + 1);
+  }
+
+  return { rangeStart, rangeEndExclusive };
 }
 
 // Schema for event data returned from tools
@@ -111,19 +153,32 @@ export const createCalendarTools = (context: AgentContext): ToolSet => ({
     description:
       "Read calendar events within a specified date range. Use this to check what events exist, find conflicts, or review the schedule.",
     inputSchema: z.object({
-      startDate: z.string().describe("Start of date range in ISO 8601 format"),
-      endDate: z.string().describe("End of date range in ISO 8601 format"),
+      startDate: z
+        .string()
+        .describe(
+          "Start of date range in ISO 8601 format. Date-only (YYYY-MM-DD) is allowed."
+        ),
+      endDate: z
+        .string()
+        .describe(
+          "End of date range in ISO 8601 format. Date-only (YYYY-MM-DD) is treated as inclusive of that day."
+        ),
     }),
     execute: async ({ startDate, endDate }) => {
-      // Use overlap detection: event overlaps range if it starts before range ends AND ends after range starts
+      const { rangeStart, rangeEndExclusive } = normalizeDateRange(
+        startDate,
+        endDate
+      );
+
+      // Overlap detection: event overlaps range if it starts before range end AND ends after range start
       const events = await db
         .select()
         .from(event)
         .where(
           and(
             eq(event.userId, context.userId),
-            lte(event.startTime, new Date(endDate)),
-            gte(event.endTime, new Date(startDate))
+            lt(event.startTime, rangeEndExclusive),
+            gt(event.endTime, rangeStart)
           )
         );
 
