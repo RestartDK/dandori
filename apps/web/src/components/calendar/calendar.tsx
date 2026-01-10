@@ -59,10 +59,17 @@ const CALENDAR_VIEW_KEY = "calendar-view";
 
 interface CalendarProps {
   isChatOpen: boolean;
+  isSidebarOpen: boolean;
   onToggleChat: () => void;
+  onToggleSidebar: () => void;
 }
 
-export function Calendar({ isChatOpen, onToggleChat }: CalendarProps) {
+export function Calendar({
+  isChatOpen,
+  isSidebarOpen,
+  onToggleChat,
+  onToggleSidebar,
+}: CalendarProps) {
   const [currentView, setCurrentView] = useState<CalendarView>(() => {
     const saved = localStorage.getItem(CALENDAR_VIEW_KEY);
     if (
@@ -223,9 +230,11 @@ export function Calendar({ isChatOpen, onToggleChat }: CalendarProps) {
         currentDate={currentDate}
         currentView={currentView}
         isChatOpen={isChatOpen}
+        isSidebarOpen={isSidebarOpen}
         onAddEvent={() => handleAddEvent()}
         onNavigate={handleNavigate}
         onToggleChat={onToggleChat}
+        onToggleSidebar={onToggleSidebar}
         onViewChange={setCurrentView}
       />
 

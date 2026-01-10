@@ -1,8 +1,10 @@
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import z from "zod";
 
+import { useTheme } from "@/components/theme-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +44,7 @@ function getInitials(name: string): string {
 
 function SettingsComponent() {
   const { data: session, isPending } = authClient.useSession();
+  const { theme, setTheme } = useTheme();
 
   const form = useForm({
     defaultValues: {
@@ -180,6 +183,43 @@ function SettingsComponent() {
               </div>
             </FieldGroup>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>
+            Customize the appearance of the application.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              onClick={() => setTheme("light")}
+              variant={theme === "light" ? "default" : "outline"}
+            >
+              <Sun className="mr-2 size-4" />
+              Light
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => setTheme("dark")}
+              variant={theme === "dark" ? "default" : "outline"}
+            >
+              <Moon className="mr-2 size-4" />
+              Dark
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => setTheme("system")}
+              variant={theme === "system" ? "default" : "outline"}
+            >
+              <Monitor className="mr-2 size-4" />
+              System
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

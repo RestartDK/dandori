@@ -1,48 +1,49 @@
-import { t } from "elysia";
+import { z } from "zod";
+import { EventSchema } from "@/modules/events/model";
 
-export const ChatMessageSchema = t.Object({
-  id: t.String(),
-  role: t.Union([
-    t.Literal("user"),
-    t.Literal("assistant"),
-    t.Literal("system"),
-    t.Literal("tool"),
-  ]),
-  content: t.Optional(t.Any()),
-  parts: t.Array(t.Any()),
+export const ChatMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z.any().optional(),
+  parts: z.array(z.any()),
 });
 
-export const ChatRequestBody = t.Object({
-  messages: t.Array(ChatMessageSchema),
-  timezone: t.Optional(t.String()),
+export const ChatRequestBody = z.object({
+  messages: z.array(ChatMessageSchema),
+  timezone: z.string().optional(),
 });
 
-export const ExecuteRequestBody = t.Object({
-  toolName: t.String(),
-  args: t.Record(t.String(), t.Any()),
+export const ExecuteRequestBody = z.object({
+  toolName: z.string(),
+  args: z.record(z.string(), z.any()),
 });
 
-export const ExecuteSuccessResponse = t.Object({
-  success: t.Boolean(),
-  event: t.Optional(
-    t.Object({
-      id: t.String(),
-      title: t.String(),
-      description: t.Nullable(t.String()),
-      startTime: t.String(),
-      endTime: t.String(),
-      isAllDay: t.Boolean(),
-      color: t.String(),
-    })
-  ),
-  message: t.Optional(t.String()),
+// Reuse EventSchema from events module - pick only the fields needed for response
+// Transform Date fields to strings for JSON serialization
+const EventResponseSchema = EventSchema.pick({
+  id: true,
+  title: true,
+  description: true,
+  startTime: true,
+  endTime: true,
+  isAllDay: true,
+  color: true,
+}).extend({
+  startTime: z.string(),
+  endTime: z.string(),
 });
 
-export const ErrorResponse = t.Object({
-  success: t.Boolean(),
-  message: t.String(),
+export const ExecuteSuccessResponse = z.object({
+  success: z.boolean(),
+  event: EventResponseSchema.optional(),
+  message: z.string().optional(),
 });
 
-export const UnauthorizedResponse = t.Object({
-  message: t.String(),
+export const ErrorResponse = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});
+
+export const UnauthorizedResponse = z.object({
+  message: z.string(),
 });

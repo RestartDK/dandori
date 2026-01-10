@@ -2,11 +2,6 @@
 
 - [x] First deploy to Dokploy both backend and frontend
 
-## To keep in mind for next plans
-
-- Make the plans always include harness where it will run db:push to test the schema changes (make sure plan defines exactly the same schema to avoid conflicts with parallel agents)
-- Include the fact that drizzle is source of truth, don't make new types throughout, using typebox with elysia and a plugin to convert drizzle to typebox
-
 ## Calendar View
 
 - [x] Sync with Google Calendar (read and write)
@@ -49,14 +44,9 @@ Problems:
 - [x] Calendar change preview (user confirms before changes apply)
 - [x] Context: sliding window of past 2 responses + relevant calendar data
 
-## Indexing
+## Submission cleanup
 
-- [ ] Store calendar events per user
-- [ ] Support date range queries and full-text search
-- [ ] Embeddings for semantic search (e.g., "that coffee thing" finds "Coffee with Sam")
-
-## Calendar Change Preview
-
-### Two way sync
-
-- [ ] This allows the users events to also sync with their google calendar as well
+- [x] Fix README.md with project description and clear setup
+- [x] Allow for multiple calendars to be available from google calendar
+- [x] Refactor and cleanup any duplicated schemas and the ai part works well
+- [ ] Film demo video going through the app

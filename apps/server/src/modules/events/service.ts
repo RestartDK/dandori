@@ -1,6 +1,6 @@
 import { db } from "@dandori-ai/db";
-import { event } from "@dandori-ai/db/schema";
-import { and, eq, gt, lt } from "drizzle-orm";
+import { calendar, event } from "@dandori-ai/db/schema";
+import { and, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
 
 import { syncGoogleCalendarEvents } from "@/google-calendar";
 
@@ -30,6 +30,7 @@ export abstract class EventsService {
   /**
    * List events for a user within a date range
    * Also syncs Google Calendar events before fetching
+   * Only returns events from visible calendars
    */
   static async list(userId: string, start: Date, end: Date) {
     // Sync Google Calendar events before fetching local events
@@ -43,6 +44,17 @@ export abstract class EventsService {
       });
     }
 
+    // Get visible calendar IDs for this user
+    const visibleCalendars = await db
+      .select({ googleCalendarId: calendar.googleCalendarId })
+      .from(calendar)
+      .where(and(eq(calendar.userId, userId), eq(calendar.isVisible, true)));
+
+    const visibleCalendarIds = visibleCalendars.map((c) => c.googleCalendarId);
+
+    // Fetch events that are either:
+    // 1. From a visible calendar (googleCalendarId is in visibleCalendarIds)
+    // 2. Local events (googleCalendarId is null)
     const events = await db
       .select()
       .from(event)
@@ -50,7 +62,14 @@ export abstract class EventsService {
         and(
           eq(event.userId, userId),
           lt(event.startTime, end),
-          gt(event.endTime, start)
+          gt(event.endTime, start),
+          or(
+            isNull(event.googleCalendarId),
+            visibleCalendarIds.length > 0
+              ? inArray(event.googleCalendarId, visibleCalendarIds)
+              : // If no visible calendars, only show local events
+                isNull(event.googleCalendarId)
+          )
         )
       );
 

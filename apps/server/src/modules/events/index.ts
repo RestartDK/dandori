@@ -1,4 +1,5 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
+import { z } from "zod";
 
 import { getSessionUser } from "@/lib/auth";
 import { CreateEventBody, EventSchema, UpdateEventBody } from "./model";
@@ -22,13 +23,13 @@ export const events = new Elysia({ prefix: "/api/events" })
       return eventList;
     },
     {
-      query: t.Object({
-        start: t.Date(),
-        end: t.Date(),
+      query: z.object({
+        start: z.coerce.date(),
+        end: z.coerce.date(),
       }),
       response: {
-        200: t.Array(EventSchema),
-        401: t.Object({ message: t.String() }),
+        200: z.array(EventSchema),
+        401: z.object({ message: z.string() }),
       },
     }
   )
@@ -62,8 +63,8 @@ export const events = new Elysia({ prefix: "/api/events" })
       body: CreateEventBody,
       response: {
         200: EventSchema,
-        401: t.Object({ message: t.String() }),
-        500: t.Object({ message: t.String() }),
+        401: z.object({ message: z.string() }),
+        500: z.object({ message: z.string() }),
       },
     }
   )
@@ -91,13 +92,13 @@ export const events = new Elysia({ prefix: "/api/events" })
       return result.event;
     },
     {
-      params: t.Object({ id: t.String() }),
+      params: z.object({ id: z.string() }),
       body: UpdateEventBody,
       response: {
         200: EventSchema,
-        401: t.Object({ message: t.String() }),
-        404: t.Object({ message: t.String() }),
-        500: t.Object({ message: t.String() }),
+        401: z.object({ message: z.string() }),
+        404: z.object({ message: z.string() }),
+        500: z.object({ message: z.string() }),
       },
     }
   )
@@ -120,11 +121,11 @@ export const events = new Elysia({ prefix: "/api/events" })
       return { success: true };
     },
     {
-      params: t.Object({ id: t.String() }),
+      params: z.object({ id: z.string() }),
       response: {
-        200: t.Object({ success: t.Boolean() }),
-        401: t.Object({ message: t.String() }),
-        404: t.Object({ message: t.String() }),
+        200: z.object({ success: z.boolean() }),
+        401: z.object({ message: z.string() }),
+        404: z.object({ message: z.string() }),
       },
     }
   );

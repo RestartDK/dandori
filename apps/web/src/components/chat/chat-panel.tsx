@@ -74,7 +74,7 @@ export function ChatPanel() {
   return (
     <div className="flex h-full w-96 flex-col border-l bg-card">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b px-4 py-3">
+      <div className="flex items-center gap-2 border-b px-4 py-4.5">
         <Sparkles className="size-4 text-primary" />
         <h2 className="font-medium text-sm">AI Assistant</h2>
       </div>

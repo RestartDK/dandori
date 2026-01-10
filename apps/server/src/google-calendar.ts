@@ -1,10 +1,8 @@
 import { db } from "@dandori-ai/db";
-import { account, event } from "@dandori-ai/db/schema";
+import { account, calendar, event } from "@dandori-ai/db/schema";
 import { env } from "@dandori-ai/env";
 import { and, eq } from "drizzle-orm";
 import { google } from "googleapis";
-
-const GOOGLE_CALENDAR_COLOR = "#4285f4";
 
 interface GoogleCalendarEvent {
   id?: string | null;
@@ -73,6 +71,66 @@ async function getGoogleOAuth2Client(userId: string) {
 }
 
 /**
+ * Syncs Google Calendar list to the local database
+ */
+export async function syncGoogleCalendars(userId: string): Promise<void> {
+  const oauth2Client = await getGoogleOAuth2Client(userId);
+
+  if (!oauth2Client) {
+    return;
+  }
+
+  console.log("[Google Sync] Syncing calendars for user:", userId);
+
+  const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
+  const response = await calendarApi.calendarList.list();
+  const googleCalendars = response.data.items ?? [];
+
+  console.log(
+    "[Google Sync] Fetched",
+    googleCalendars.length,
+    "calendars from Google"
+  );
+
+  for (const gCal of googleCalendars) {
+    if (!gCal.id) {
+      continue;
+    }
+
+    const calendarData = {
+      userId,
+      googleCalendarId: gCal.id,
+      name: gCal.summary ?? "Untitled Calendar",
+      color: gCal.backgroundColor ?? "#3b82f6",
+      isPrimary: gCal.primary === true,
+    };
+
+    // Check if calendar already exists
+    const [existingCalendar] = await db
+      .select()
+      .from(calendar)
+      .where(
+        and(eq(calendar.userId, userId), eq(calendar.googleCalendarId, gCal.id))
+      );
+
+    if (existingCalendar) {
+      // Update existing calendar (don't override isVisible)
+      await db
+        .update(calendar)
+        .set({
+          name: calendarData.name,
+          color: calendarData.color,
+          isPrimary: calendarData.isPrimary,
+        })
+        .where(eq(calendar.id, existingCalendar.id));
+    } else {
+      // Insert new calendar
+      await db.insert(calendar).values(calendarData);
+    }
+  }
+}
+
+/**
  * Syncs Google Calendar events to the local database for a date range
  */
 export async function syncGoogleCalendarEvents(
@@ -87,57 +145,90 @@ export async function syncGoogleCalendarEvents(
     return;
   }
 
+  // Sync calendars first
+  await syncGoogleCalendars(userId);
+
+  // Get visible calendars from DB
+  const visibleCalendars = await db
+    .select()
+    .from(calendar)
+    .where(and(eq(calendar.userId, userId), eq(calendar.isVisible, true)));
+
+  if (visibleCalendars.length === 0) {
+    console.log("[Google Sync] No visible calendars for user:", userId);
+    return;
+  }
+
   console.log("[Google Sync] Starting sync for user:", userId, {
     timeMin: timeMin.toISOString(),
     timeMax: timeMax.toISOString(),
+    calendars: visibleCalendars.length,
   });
 
-  const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+  const calendarApi = google.calendar({ version: "v3", auth: oauth2Client });
 
-  const response = await calendar.events.list({
-    calendarId: "primary",
-    timeMin: timeMin.toISOString(),
-    timeMax: timeMax.toISOString(),
-    singleEvents: true,
-    orderBy: "startTime",
-    maxResults: 2500,
-  });
+  for (const cal of visibleCalendars) {
+    const response = await calendarApi.events.list({
+      calendarId: cal.googleCalendarId,
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: 2500,
+    });
 
-  const googleEvents = response.data.items ?? [];
-  console.log(
-    "[Google Sync] Fetched",
-    googleEvents.length,
-    "events from Google Calendar"
-  );
+    const googleEvents = response.data.items ?? [];
+    console.log("[Google Sync] Calendar:", cal.name, {
+      googleCalendarId: cal.googleCalendarId,
+      color: cal.color,
+      eventCount: googleEvents.length,
+      events: googleEvents.map((e) => ({
+        id: e.id,
+        title: e.summary,
+        start: e.start?.dateTime ?? e.start?.date,
+        end: e.end?.dateTime ?? e.end?.date,
+        isAllDay: !e.start?.dateTime,
+      })),
+    });
 
-  for (const gEvent of googleEvents) {
-    if (!(gEvent.id && gEvent.start)) {
-      continue;
-    }
+    for (const gEvent of googleEvents) {
+      if (!(gEvent.id && gEvent.start)) {
+        continue;
+      }
 
-    const eventData = parseGoogleEvent(gEvent, userId);
+      const eventData = parseGoogleEvent(
+        gEvent,
+        userId,
+        cal.googleCalendarId,
+        cal.color
+      );
 
-    // Check if event already exists
-    const [existingEvent] = await db
-      .select()
-      .from(event)
-      .where(and(eq(event.userId, userId), eq(event.googleEventId, gEvent.id)));
+      // Check if event already exists
+      const [existingEvent] = await db
+        .select()
+        .from(event)
+        .where(
+          and(eq(event.userId, userId), eq(event.googleEventId, gEvent.id))
+        );
 
-    if (existingEvent) {
-      // Update existing event
-      await db
-        .update(event)
-        .set({
-          title: eventData.title,
-          description: eventData.description,
-          startTime: eventData.startTime,
-          endTime: eventData.endTime,
-          isAllDay: eventData.isAllDay,
-        })
-        .where(eq(event.id, existingEvent.id));
-    } else {
-      // Insert new event
-      await db.insert(event).values(eventData);
+      if (existingEvent) {
+        // Update existing event
+        await db
+          .update(event)
+          .set({
+            title: eventData.title,
+            description: eventData.description,
+            startTime: eventData.startTime,
+            endTime: eventData.endTime,
+            isAllDay: eventData.isAllDay,
+            color: eventData.color,
+            googleCalendarId: eventData.googleCalendarId,
+          })
+          .where(eq(event.id, existingEvent.id));
+      } else {
+        // Insert new event
+        await db.insert(event).values(eventData);
+      }
     }
   }
 }
@@ -147,7 +238,9 @@ export async function syncGoogleCalendarEvents(
  */
 function parseGoogleEvent(
   gEvent: GoogleCalendarEvent,
-  userId: string
+  userId: string,
+  googleCalendarId: string,
+  calendarColor: string
 ): {
   userId: string;
   title: string;
@@ -201,9 +294,9 @@ function parseGoogleEvent(
     startTime,
     endTime,
     isAllDay,
-    color: GOOGLE_CALENDAR_COLOR,
+    color: calendarColor,
     googleEventId: gEvent.id ?? "",
-    googleCalendarId: "primary",
+    googleCalendarId,
   };
 }
 
