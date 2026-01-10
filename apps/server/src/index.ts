@@ -3,6 +3,7 @@ import { env } from "@dandori-ai/env";
 import { cors } from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
 
+import { calendars } from "./modules/calendars";
 import { chat } from "./modules/chat";
 import { events } from "./modules/events";
 
@@ -22,6 +23,7 @@ const app = new Elysia()
       timestamp: t.Number(),
     }),
   })
+  .use(calendars)
   .use(events)
   .use(chat)
   .listen(env.PORT, () => {

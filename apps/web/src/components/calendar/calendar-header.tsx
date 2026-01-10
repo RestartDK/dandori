@@ -1,4 +1,10 @@
-import { ChevronLeft, ChevronRight, PanelLeft, Plus } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  PanelLeft,
+  PanelLeftClose,
+  Plus,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +21,12 @@ interface CalendarHeaderProps {
   currentView: CalendarView;
   currentDate: Date;
   isChatOpen: boolean;
+  isSidebarOpen: boolean;
   onViewChange: (view: CalendarView) => void;
   onNavigate: (direction: "prev" | "next" | "today") => void;
   onAddEvent: () => void;
   onToggleChat: () => void;
+  onToggleSidebar: () => void;
 }
 
 function formatDateRange(view: CalendarView, date: Date): string {
@@ -63,14 +71,31 @@ export function CalendarHeader({
   currentView,
   currentDate,
   isChatOpen,
+  isSidebarOpen,
   onViewChange,
   onNavigate,
   onAddEvent,
   onToggleChat,
+  onToggleSidebar,
 }: CalendarHeaderProps) {
   return (
     <div className="flex items-center justify-between border-b px-4 py-3">
       <div className="flex items-center gap-4">
+        <Button
+          aria-label={
+            isSidebarOpen ? "Close calendar sidebar" : "Open calendar sidebar"
+          }
+          onClick={onToggleSidebar}
+          size="icon"
+          variant="ghost"
+        >
+          {isSidebarOpen ? (
+            <PanelLeftClose className="size-4" />
+          ) : (
+            <PanelLeft className="size-4" />
+          )}
+        </Button>
+
         <Button onClick={() => onNavigate("today")} size="sm" variant="outline">
           Today
         </Button>
