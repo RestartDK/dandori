@@ -15,6 +15,13 @@
       "when": 1767697704789,
       "tag": "0001_brief_mach_iv",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768057450054,
+      "tag": "0002_real_ezekiel",
+      "breakpoints": true
     }
   ]
 }
